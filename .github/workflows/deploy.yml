@@ -9,7 +9,9 @@ jobs:
     name: Deploy Frontend (Vercel)
     runs-on: ubuntu-latest
     if: |
-      contains(toJson(github.event.commits.*.modified + github.event.commits.*.added + github.event.commits.*.removed), 'frontend/')
+      contains(toJson(github.event.commits.*.modified), 'frontend/') ||
+      contains(toJson(github.event.commits.*.added), 'frontend/') ||
+      contains(toJson(github.event.commits.*.removed), 'frontend/')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,7 +38,9 @@ jobs:
     name: Deploy Backend (Railway)
     runs-on: ubuntu-latest
     if: |
-      contains(toJson(github.event.commits.*.modified + github.event.commits.*.added + github.event.commits.*.removed), 'backend/')
+      contains(toJson(github.event.commits.*.modified), 'backend/') ||
+      contains(toJson(github.event.commits.*.added), 'backend/') ||
+      contains(toJson(github.event.commits.*.removed), 'backend/')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

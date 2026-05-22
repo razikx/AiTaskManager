@@ -1,0 +1,57 @@
+# CLAUDE.md — Project Memory & Developer Guidelines
+
+## Project
+AI-Powered Task Manager — NLP task parsing, subtask generation, smart prioritization, real-time sync.
+
+---
+
+## Stack
+- **Frontend:** React 19 + TypeScript 5, Tailwind CSS → Vercel
+- **Backend:** Node.js + Express (JWT proxy) → Railway
+- **DB/Auth:** Supabase (PostgreSQL, RLS, real-time)
+- **AI:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) via Express proxy — never called directly from client
+
+---
+
+## Status
+- **Phase:** Deployed (MVP live)
+- **Completed:** ErrorBoundary, error states (dashboard/analytics/subtasks), inline task edit UI, Haiku 4.5 upgrade, frontend + backend deployment
+- **Frontend (Vercel):** https://frontend-kappa-sand-ihllnsfmku.vercel.app
+- **Backend (Railway):** https://ai-task-manager-backend-production-e73a.up.railway.app
+- **Vercel project:** `juan-zepeda-s-projects/frontend` — redeploy with `vercel --prod` from `/frontend`
+- **Railway project:** `ai-task-manager-backend` — redeploy with `railway up` from `/backend`
+- **Key env note:** `VITE_API_URL` must include `/api` suffix (`https://...railway.app/api`); `CORS_ORIGIN` on Railway must match the Vercel production alias exactly
+
+---
+
+## Architecture (Immutable)
+- React never imports Anthropic SDK — all Claude calls route through Express only
+- Client uses Supabase SDK for auth/realtime; Express uses service-role token for DB writes
+- JWTs from Supabase Auth verified statelessly in Express middleware (`authGuard.ts`)
+- All LLM prompts defined server-side; client sends raw user text only
+
+---
+
+## API Response Contract (Immutable)
+All Express routes must return:
+```typescript
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string; details?: unknown; };
+}
+```
+
+---
+
+## Coding Conventions (Immutable)
+- `kebab-case` for utils/routes/middleware; `PascalCase` for React components
+- Semicolons always; 2-space indent; no tabs
+- No `any` — use `unknown` + type narrowing; avoid `as Type` unless required by external lib
+
+---
+
+## Response Style (Immutable)
+- No conversational intros, conclusions, or summaries unless explicitly asked
+- Never regenerate full files — output only the modified snippet
+- Silent background mutations — one-line acknowledgment only

@@ -8,6 +8,11 @@ See CLAUDE.md §Stack, §Architecture, §API Response Contract, §Coding Convent
 
 ---
 
+## Gaps & Outstanding Work
+See `GAPS.md` (gitignored, project root) — prioritized list of security fixes, missing features, and resolved issues. Check it at the start of every session.
+
+---
+
 ## Status
 - **Phase:** Deployed (MVP live)
 - **Last completed:** Frontend + Backend deployment (Vercel + Railway)

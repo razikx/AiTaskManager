@@ -13,6 +13,11 @@ AI-Powered Task Manager — NLP task parsing, subtask generation, smart prioriti
 
 ---
 
+## Gaps & Outstanding Work
+See `GAPS.md` (gitignored, project root) — prioritized list of security fixes, missing features, and resolved issues. Check it at the start of every session.
+
+---
+
 ## Status
 - **Phase:** Deployed (MVP live)
 - **Completed:** Full deployment — Vercel (frontend) + Railway (backend) + custom domain (razikx.com)

@@ -3,6 +3,7 @@ import { getProjects, createProject, deleteProject } from '../controllers/projec
 import { getTasks, createTask, updateTask, deleteTask } from '../controllers/taskController.js';
 import { getSubtasksForTask, createSubtask, updateSubtask, deleteSubtask, bulkCreateSubtasks } from '../controllers/subtaskController.js';
 import { parseTask, generateSubtasks } from '../controllers/aiController.js';
+import { aiRateLimiter } from '../middleware/aiRateLimit.js';
 
 const apiRouter = Router();
 
@@ -27,7 +28,7 @@ taskRouter.delete('/:id', deleteTask);
 taskRouter.get('/:taskId/subtasks', getSubtasksForTask);
 taskRouter.post('/:taskId/subtasks', createSubtask);
 taskRouter.post('/:taskId/subtasks/bulk', bulkCreateSubtasks);
-taskRouter.post('/:taskId/ai-subtasks', generateSubtasks);
+taskRouter.post('/:taskId/ai-subtasks', aiRateLimiter, generateSubtasks);
 
 const subtaskRouter = Router();
 subtaskRouter.patch('/:id', updateSubtask);
@@ -37,7 +38,7 @@ subtaskRouter.delete('/:id', deleteSubtask);
 // AI ENDPOINT ROUTES
 //---------------------------------------------------------
 const aiRouter = Router();
-aiRouter.post('/parse-task', parseTask);
+aiRouter.post('/parse-task', aiRateLimiter, parseTask);
 
 //---------------------------------------------------------
 // MOUNT ROUTERS

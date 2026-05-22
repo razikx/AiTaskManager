@@ -1,17 +1,14 @@
-name: Deploy
+name: Deploy Frontend
 
 on:
   push:
     branches: [main]
+    paths: ['frontend/**']
 
 jobs:
-  deploy-frontend:
-    name: Deploy Frontend (Vercel)
+  deploy:
+    name: Deploy to Vercel
     runs-on: ubuntu-latest
-    if: |
-      contains(toJson(github.event.commits.*.modified), 'frontend/') ||
-      contains(toJson(github.event.commits.*.added), 'frontend/') ||
-      contains(toJson(github.event.commits.*.removed), 'frontend/')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,21 +30,3 @@ jobs:
         env:
           VERCEL_ORG_ID: team_8KloincKc12feu3HqoGUlX54
           VERCEL_PROJECT_ID: prj_qTqBSeBRLAo2aCRbRxcJCfbD7op5
-
-  deploy-backend:
-    name: Deploy Backend (Railway)
-    runs-on: ubuntu-latest
-    if: |
-      contains(toJson(github.event.commits.*.modified), 'backend/') ||
-      contains(toJson(github.event.commits.*.added), 'backend/') ||
-      contains(toJson(github.event.commits.*.removed), 'backend/')
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install -g @railway/cli
-      - run: railway up --service 87a9915b-d1d3-4e9d-b5b0-d45a54bc3940 --detach
-        working-directory: backend
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

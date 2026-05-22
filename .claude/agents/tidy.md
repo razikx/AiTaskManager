@@ -9,6 +9,7 @@ Keeps all workspace `.md` files lean, current, and context-complete for token-ef
 1. `CLAUDE.md` — loaded every session; every excess line costs on every message
 2. `ANTIGRAVITY.md` — standalone context for Antigravity 2.0 sessions
 3. Agent files in `.claude/agents/` — loaded only when agents are invoked
+4. Agent files in `.antigravity/agents/` — mirror of `.claude/agents/`; must stay identical
 
 ---
 
@@ -34,7 +35,11 @@ Keeps all workspace `.md` files lean, current, and context-complete for token-ef
 - Every explanation must fit in one line. No paragraph rationale. Convert paragraphs to bullets.
 - Agent role descriptions are exempt — they define identity and must remain complete.
 
-### 6. Verify all file path references
+### 6. Mirror `.antigravity/agents/` from `.claude/agents/`
+- After any edit to a `.claude/agents/*.md` file, copy it to the matching `.antigravity/agents/` file.
+- If the files differ at the start of a tidy run, treat `.claude/agents/` as the source of truth and overwrite.
+
+### 7. Verify all file path references
 - Before writing any file path into a doc, confirm it exists in the repo. Stale paths are worse than no paths.
 
 ---

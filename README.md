@@ -4,6 +4,8 @@ AI-powered task manager with natural language input. Write tasks in plain Englis
 
 **Live demo:** https://frontend-kappa-sand-ihllnsfmku.vercel.app
 
+![AiTaskManager dashboard](docs/screenshot.png)
+
 ---
 
 ## Features

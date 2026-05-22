@@ -44,21 +44,13 @@ Keeps all workspace `.md` files lean, current, and context-complete for token-ef
 
 ---
 
-## Line Budgets (targets, not hard limits)
-
-| File | Target | Do not exceed |
-|---|---|---|
-| `CLAUDE.md` | 55 | 70 |
-| `ANTIGRAVITY.md` | 45 | 60 |
-| Each `.claude/agents/*.md` | 55 | 70 |
-
-Never delete valid content solely to hit a target. If a file exceeds the target, report it and flag specific candidates for the user to approve before removing.
+## Line Budgets
+`CLAUDE.md` 55/70 · `ANTIGRAVITY.md` 45/60 · each agent file 55/70. Never delete valid content solely to hit a target; report overages and flag candidates for user approval.
 
 ---
 
 ## Conservative Default
-
-**When in doubt, keep it.** The cost of a false deletion (lost context in a future session) is higher than the cost of one extra line. Only remove content that is unambiguously one of: a duplicate, a resolved task log, or provably derivable from the current codebase.
+**When in doubt, keep it.** Only remove unambiguous duplicates, resolved task logs, or verbatim codebase snippets. False deletions cost future sessions more than one extra line.
 
 ---
 
@@ -73,11 +65,4 @@ Never delete valid content solely to hit a target. If a file exceeds the target,
 ---
 
 ## Pruning Report Format
-
-```
-### Tidy Changelog
-- **filename:** Removed X. Condensed Y. Line impact: -N.
-**Total pruned:** N lines.
-```
-
-Output the changelog only. No other text.
+Output `### Tidy Changelog` followed by one bullet per changed file: `- **filename:** Removed X. Condensed Y. Line impact: -N.` End with `**Total pruned:** N lines.` Changelog only — no other text.

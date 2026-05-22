@@ -16,11 +16,11 @@ AI-Powered Task Manager — NLP task parsing, subtask generation, smart prioriti
 ## Status
 - **Phase:** Deployed (MVP live)
 - **Completed:** ErrorBoundary, error states (dashboard/analytics/subtasks), inline task edit UI, Haiku 4.5 upgrade, frontend + backend deployment
-- **Frontend (Vercel):** https://frontend-kappa-sand-ihllnsfmku.vercel.app
+- **Frontend (Vercel):** https://razikx.com (alias: https://frontend-kappa-sand-ihllnsfmku.vercel.app)
 - **Backend (Railway):** https://ai-task-manager-backend-production-e73a.up.railway.app
 - **Vercel project:** `juan-zepeda-s-projects/frontend` — redeploy with `vercel --prod` from `/frontend`
 - **Railway project:** `ai-task-manager-backend` — redeploy with `railway up` from `/backend`
-- **Key env note:** `VITE_API_URL` must include `/api` suffix (`https://...railway.app/api`); `CORS_ORIGIN` on Railway must match the Vercel production alias exactly
+- **Key env note:** `VITE_API_URL` must include `/api` suffix; `CORS_ORIGIN` on Railway is comma-separated (`https://razikx.com,https://www.razikx.com,https://frontend-kappa-sand-ihllnsfmku.vercel.app`)
 
 ---
 

@@ -11,5 +11,5 @@ See CLAUDE.md §Stack, §Architecture, §API Response Contract, §Coding Convent
 ## Status
 - **Phase:** Deployed (MVP live)
 - **Last completed:** Frontend + Backend deployment (Vercel + Railway)
-- **Frontend:** https://frontend-kappa-sand-ihllnsfmku.vercel.app
+- **Frontend:** https://razikx.com
 - **Backend:** https://ai-task-manager-backend-production-e73a.up.railway.app

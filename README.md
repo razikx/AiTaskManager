@@ -2,7 +2,7 @@
 
 AI-powered task manager with natural language input. Write tasks in plain English — the app parses priority, due date, and category automatically using Claude Haiku.
 
-**Live demo:** https://frontend-kappa-sand-ihllnsfmku.vercel.app
+**Live demo:** https://razikx.com
 
 ![AiTaskManager dashboard](docs/screenshot.png)
 

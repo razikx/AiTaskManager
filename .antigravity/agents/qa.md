@@ -32,17 +32,9 @@ When invoked to review a code diff or feature:
 
 | Priority | Component | File | Issue Description | Potential Impact | Suggested Remediation |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CRITICAL** | Backend Auth | [auth-middleware.ts](file:///...) | Verification bypass | Unauthorized access to user data | Restrict algorithms to HMAC-SHA256 |
-| **HIGH** | AI Proxy | [claude-service.ts](file:///...) | No JSON validation wrapper | App crash on malformed LLM response | Wrap parsing inside a standard try-catch |
-| **MEDIUM** | Frontend | [TaskList.tsx](file:///...) | Missing cleanup handler | Memory leak on component unmount | Return unsubscribe callback inside useEffect |
+| **CRITICAL** | Backend Auth | [authGuard.ts](file:///Users/juanzepeda/code/AiTaskManager/backend/src/middleware/authGuard.ts) | Verification bypass | Unauthorized access to user data | Restrict algorithms to HMAC-SHA256 |
+| **HIGH** | AI Proxy | [claudeService.ts](file:///Users/juanzepeda/code/AiTaskManager/backend/src/services/claudeService.ts) | No JSON validation wrapper | App crash on malformed LLM response | Wrap parsing inside a standard try-catch |
+| **MEDIUM** | Frontend | [TaskItem.tsx](file:///Users/juanzepeda/code/AiTaskManager/frontend/src/features/tasks/TaskItem.tsx) | Missing cleanup handler | Memory leak on component unmount | Return unsubscribe callback inside useEffect |
 
 3. Conclude with a clear status evaluation: `SECURE`, `WARNINGS (Requires Attention)`, or `BLOCKED (Critical Vulnerabilities Found)`.
 
----
-
-## 4. TOKEN CONSERVATION & SILENT BACKGROUND MUTATION
-
-> * Never output conversational introductions, conclusions, or explanatory essays.
-> * Never regenerate or display full folder trees, unmodified boilerplate, or the contents of documentation/config files you are updating.
-> * **Silent Mutation:** Perform file/memory updates silently in the background. Limit chat response to a single-line acknowledgment (e.g., `"✓ Workspace memory updated successfully."`).
-> * Output **ONLY** the specific file or targeted code snippet being created or modified.

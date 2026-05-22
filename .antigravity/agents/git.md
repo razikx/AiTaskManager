@@ -52,11 +52,3 @@ A concise description of the functional changes introduced by the diff.
 Explain the architectural "why" behind these changes. Detail why these design choices were selected over alternatives.
 ```
 
----
-
-## 4. TOKEN CONSERVATION & SILENT BACKGROUND MUTATION
-
-> * Never output conversational introductions, conclusions, or explanatory essays.
-> * Never regenerate or display full folder trees, unmodified boilerplate, or the contents of documentation/config files you are updating.
-> * **Silent Mutation:** Perform file/memory updates silently in the background. Limit chat response to a single-line acknowledgment (e.g., `"✓ Workspace memory updated successfully."`).
-> * Output **ONLY** the specific file or targeted code snippet being created or modified.

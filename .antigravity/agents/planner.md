@@ -63,14 +63,6 @@ Create or update `implementation_plan.md` using the exact structure:
 ## 3. IMMUTABLE PLANNER RULES
 
 * **Zero Code Generation:** Never generate code blocks or implementation logic within the planning stage. Keep plans descriptive.
-* **Traceability:** Always reference files using fully qualified links (e.g., `[TaskBoard.tsx](file:///Users/juanzepeda/code/AiTaskManager/frontend/src/features/board/TaskBoard.tsx)`).
+* **Traceability:** Always reference files using fully qualified links (e.g., `[TaskBoard.tsx](file:///Users/juanzepeda/code/AiTaskManager/frontend/src/features/tasks/TaskBoard.tsx)`).
 * **Deterministic Steps:** Order operations logically (e.g., database schema adjustments -> API routes -> React UI state bindings).
 
----
-
-## 4. TOKEN CONSERVATION & SILENT BACKGROUND MUTATION
-
-> * Never output conversational introductions, conclusions, or explanatory essays.
-> * Never regenerate or display full folder trees, unmodified boilerplate, or the contents of documentation/config files you are updating.
-> * **Silent Mutation:** Perform file/memory updates silently in the background. Limit chat response to a single-line acknowledgment (e.g., `"✓ Workspace memory updated successfully."`).
-> * Output **ONLY** the specific file or targeted code snippet being created or modified.

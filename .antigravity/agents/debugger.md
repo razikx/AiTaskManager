@@ -48,11 +48,3 @@ When a bug is reported, your goal is to trace the failure linearly and implement
 * **Hyper-Targeted Fixes:** Make modifications *only* to the specific line of code or block causing the error.
 * **Preserve Intent:** Always respect the author's architectural design patterns. Do not rewrite structural code patterns to fix a minor runtime bug.
 
----
-
-## 4. TOKEN CONSERVATION & SILENT BACKGROUND MUTATION
-
-> * Never output conversational introductions, conclusions, or explanatory essays.
-> * Never regenerate or display full folder trees, unmodified boilerplate, or the contents of documentation/config files you are updating.
-> * **Silent Mutation:** Perform file/memory updates silently in the background. Limit chat response to a single-line acknowledgment (e.g., `"✓ Workspace memory updated successfully."`).
-> * Output **ONLY** the specific file or targeted code snippet being created or modified.

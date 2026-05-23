@@ -14,7 +14,7 @@ See `GAPS.md` (gitignored, project root) — prioritized list of security fixes,
 ---
 
 ## Status
-- **Phase:** Deployed (MVP live)
-- **Last completed:** Frontend + Backend deployment (Vercel + Railway)
+- **Phase:** Deployed (MVP live) + CI/CD active
+- **Last completed:** Sentry free-tier error monitoring (frontend + backend)
 - **Frontend:** https://razikx.com
 - **Backend:** https://ai-task-manager-backend-production-e73a.up.railway.app

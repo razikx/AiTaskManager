@@ -1,3 +1,5 @@
+import './instrument.js';
+import * as Sentry from '@sentry/node';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -54,7 +56,9 @@ app.get('/api/health', authGuard, (req: AuthenticatedRequest, res: Response) => 
 // Mount database and AI processing routing
 app.use('/api', authGuard, apiRouter);
 
-// 4. CENTRAL ERROR HANDLER MIDDLEWARE
+// 4. SENTRY + CENTRAL ERROR HANDLERS
+Sentry.setupExpressErrorHandler(app);
+
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.status || 500;
   const errorCode = err.code || 'INTERNAL_SERVER_ERROR';

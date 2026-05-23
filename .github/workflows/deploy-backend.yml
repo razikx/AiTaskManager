@@ -19,3 +19,4 @@ jobs:
         working-directory: backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: 0df03820-bb5a-462f-94be-e198acbdee43

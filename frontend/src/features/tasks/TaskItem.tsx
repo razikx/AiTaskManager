@@ -22,6 +22,7 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Map priority_score to badge styling and labels
@@ -227,23 +228,43 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
         </div>
 
         {/* Edit & Delete triggers */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
-          {!isEditing && (
-            <button
-              onClick={openEdit}
-              className="text-slate-500 hover:text-brand-primary p-1"
-              title="Edit task"
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
+        <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all flex-shrink-0">
+          {confirmDelete ? (
+            <div className="flex items-center gap-1">
+              <span className="text-2xs text-slate-400 whitespace-nowrap">Delete?</span>
+              <button
+                onClick={() => onDelete(task.id)}
+                className="text-2xs px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded font-semibold transition-colors"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-2xs px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded font-semibold transition-colors"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <>
+              {!isEditing && (
+                <button
+                  onClick={openEdit}
+                  className="text-slate-500 hover:text-brand-primary p-1"
+                  title="Edit task"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-slate-500 hover:text-red-400 p-1"
+                title="Delete task"
+              >
+                <Trash2 className="w-4.5 h-4.5" />
+              </button>
+            </>
           )}
-          <button
-            onClick={() => onDelete(task.id)}
-            className="text-slate-500 hover:text-red-400 p-1"
-            title="Delete task"
-          >
-            <Trash2 className="w-4.5 h-4.5" />
-          </button>
         </div>
       </div>
 

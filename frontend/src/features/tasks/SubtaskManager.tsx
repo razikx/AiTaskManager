@@ -14,6 +14,7 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleGenerateChecklist = async () => {
     setIsGenerating(true);
@@ -162,13 +163,30 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
                     </span>
                   </button>
 
-                  <button
-                    onClick={() => handleDeleteSubtask(subtask.id)}
-                    className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-0.5"
-                    title="Delete subtask"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {confirmDeleteId === subtask.id ? (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => { handleDeleteSubtask(subtask.id); setConfirmDeleteId(null); }}
+                        className="text-2xs px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded font-semibold transition-colors"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-2xs px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded font-semibold transition-colors"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(subtask.id)}
+                      className="text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all p-0.5 flex-shrink-0"
+                      title="Delete subtask"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

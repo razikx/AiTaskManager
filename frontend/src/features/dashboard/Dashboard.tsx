@@ -218,7 +218,10 @@ export function Dashboard(): React.JSX.Element {
 
     // Call the parser endpoint
     const [res, err] = await handleApiRequest(
-      apiClient.post('/ai/parse-task', { rawText: rawInput })
+      apiClient.post('/ai/parse-task', {
+        rawText: rawInput,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      })
     );
 
     if (err || !res?.data?.success) {

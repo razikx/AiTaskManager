@@ -13,7 +13,7 @@ export async function parseTask(
   next: NextFunction
 ) {
   try {
-    const { rawText } = req.body;
+    const { rawText, timezone } = req.body;
 
     if (!rawText || typeof rawText !== 'string') {
       return res.status(400).json({
@@ -41,7 +41,8 @@ export async function parseTask(
     }
 
     // Call the Claude AI / regex parser service
-    const parsedData = await parseTaskText(trimmedText);
+    const safeTimezone = typeof timezone === 'string' && timezone.length <= 64 ? timezone : undefined;
+    const parsedData = await parseTaskText(trimmedText, safeTimezone);
 
     return res.status(200).json({
       success: true,

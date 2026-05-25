@@ -56,7 +56,7 @@ function extractJsonArray(text: string): string {
  * @param rawText The raw user natural language string.
  * @returns A promise resolving to the structured ParsedTask object.
  */
-export async function parseTaskText(rawText: string): Promise<ParsedTask> {
+export async function parseTaskText(rawText: string, timezone?: string): Promise<ParsedTask> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
@@ -64,7 +64,8 @@ export async function parseTaskText(rawText: string): Promise<ParsedTask> {
     return fallbackRegexParser(rawText);
   }
 
-  const referenceDate = new Date().toISOString();
+  const tz = timezone || 'UTC';
+  const referenceDate = new Date().toLocaleString('sv-SE', { timeZone: tz, hour12: false }).replace(' ', 'T');
 
   try {
     const message = await anthropic.messages.create({
@@ -77,7 +78,7 @@ export async function parseTaskText(rawText: string): Promise<ParsedTask> {
 Analyze the user's task description and return a single raw JSON object matching this interface:
 {
   "taskName": string, // Short title representing the core action (e.g. "Call dentist")
-  "dueDate": string | null, // ISO-8601 string calculated relative to the reference time provided in the user message (e.g. next Tuesday at 3pm). If no time is specified, default to 12:00 PM. If no date is specified, return null.
+  "dueDate": string | null, // ISO-8601 string with timezone offset calculated relative to the reference time and timezone provided in the user message. If no time is specified, default to 12:00 PM in the user's timezone. If no date is specified, return null.
   "inferredCategory": string, // A logical one-word category (e.g., Work, Personal, Shopping, Health, Finance, Social)
   "suggestedPriority": "low" | "medium" | "high" // Deduced urgency based on semantics, deadlines, and urgency cues
 }
@@ -88,7 +89,7 @@ Do not wrap your output in markdown JSON blocks (\`\`\`json). Return raw JSON te
       messages: [
         {
           role: 'user',
-          content: `Reference time: ${referenceDate}\nParse this task: "${sanitizeForPrompt(rawText, 2000)}"`
+          content: `User timezone: ${tz}\nReference time (local): ${referenceDate}\nParse this task: "${sanitizeForPrompt(rawText, 2000)}"`
         }
       ]
     });

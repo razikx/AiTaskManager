@@ -52,7 +52,7 @@ Present the plan inline in the conversation. For large or explicitly multi-step 
   * Express Backend API & Routes
   * React Frontend Components/Hooks
   * Configuration updates
-* **Verification Plan:** Explicitly define automated commands and manual verification procedures.
+* **Verification Plan:** Explicitly define automated commands and manual verification procedures. For any plan that includes a database migration, always list the migration as step 1: "Run `supabase/migrations/NNN_*.sql` in the Supabase SQL editor" — before any backend or frontend deploy steps.
 
 ### Phase 3: Execute and Track
 * For small changes, track progress in the conversation only.

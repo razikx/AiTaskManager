@@ -23,6 +23,10 @@ See CLAUDE.md §Architecture for system layer layout, decoupling, and auth rules
 * **Rule:** RLS policies must cover every user table.
 * **Authentication:** Verify that authorization rules resolve dynamically against the authenticated JWT user id (`auth.uid()`).
 * **Supabase client selection:** See CLAUDE.md §Architecture — user-scoped client for all request-bound CRUD; service-role reserved for background/admin actions outside a user request context.
+* **Migration deploy order:** See CLAUDE.md §Status — always run the Supabase migration before pushing backend code that depends on the new schema.
+
+### AI Data Contract
+* **`ParsedTask.priority_score`** is always server-normalized (0–3, `urgent` keyword → 3) by `claudeService.ts`. Client code must never re-map `suggestedPriority` strings to scores — that logic lives on the backend only.
 
 ---
 

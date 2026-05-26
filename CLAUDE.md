@@ -23,6 +23,7 @@ See `GAPS.md` (gitignored, project root) — prioritized list of security fixes,
 - **Frontend (Vercel):** https://razikx.com — GHA auto-deploys on `frontend/**` push; manual: `vercel --prod` from `/frontend`
 - **Backend (Railway):** https://ai-task-manager-backend-production-e73a.up.railway.app — auto-deploys via Railway GitHub integration on push to `main`
 - **Key env note:** `VITE_API_URL` must include `/api` suffix; `CORS_ORIGIN` on Railway is comma-separated (`https://razikx.com,https://www.razikx.com,https://frontend-kappa-sand-ihllnsfmku.vercel.app`)
+- **Deploy order:** Run Supabase SQL migration first → push backend → push frontend. Never push backend code that depends on a schema change before the migration runs.
 
 ---
 
@@ -43,6 +44,13 @@ interface ApiResponse<T = unknown> {
   error?: { code: string; message: string; details?: unknown; };
 }
 ```
+
+---
+
+## Testing
+- **Run:** `npm test` in `/frontend` and `npm test` in `/backend` (both use Vitest)
+- **Backend:** Vitest + supertest — controller, middleware, and service tests in `src/**/*.test.ts`
+- **Frontend:** Vitest + jsdom + Testing Library — component tests in `src/**/*.test.tsx`
 
 ---
 

@@ -30,7 +30,7 @@ Files inside `frontend/src/` must align with:
 - `assets/` — static images, SVGs
 - `components/` — globally shared UI (buttons, inputs, modals)
 - `context/` — global React context (AuthContext)
-- `features/` — feature-scoped components (`tasks/`, `board/`, `analytics/`)
+- `features/` — feature-scoped components (`tasks/`, `dashboard/`, `analytics/`)
 - `services/` — API wrappers (`supabaseClient.ts`, `apiClient.ts`)
 - `types/` — shared type declarations
 

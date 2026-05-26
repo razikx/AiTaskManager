@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "razikx.com" }],
+      "destination": "https://www.razikx.com/:path*",
+      "permanent": true
+    }
+  ]
+}

@@ -6,7 +6,7 @@ Primary job: produce compact, loss-minimized engineering state handoffs for long
 
 1. Read latest user request, `GAPS.md`, git status, touched files, and active planning files.
 2. Preserve latest intent before older context; compact state before doc cleanup.
-3. Edit agent files only in `agents/*.md`; after agent edits, run `./syncAgents.sh` before reporting completion.
+3. Edit agent files only in `agents/*.md` — this is the canonical source regardless of which tool you are running in. Never edit `.claude/agents/`, `.antigravity/agents/`, or root `tidy.md` directly; those are read-only mirrors. After edits, run `./syncAgents.sh` before reporting completion.
 4. Sync markdown only when asked or when stale/duplicated context harms future sessions.
 5. Report changed files and unresolved risks only.
 
@@ -65,11 +65,12 @@ Drop: completed command chatter, repeated rationale, old status updates, unchang
 
 ## Doc Sync Rules
 
-- Managed files: `CLAUDE.md`, `AGENTS.md`, `ANTIGRAVITY.md`, `agents/*.md`, generated `.claude/agents/*.md`, generated `.antigravity/agents/*.md`, generated `tidy.md`, `GAPS.md`, `planning.md`, `task.md`, `implementation_plan.md`.
+- Managed files: `CLAUDE.md`, `AGENTS.md`, `ANTIGRAVITY.md`, `agents/*.md`, generated `.claude/agents/*.md`, generated `.antigravity/agents/*.md`, generated `tidy.md`, `GAPS.md`, `planning.md`, `task.md`, `implementation_plan.md`, `backend/AGENT.md`, `frontend/AGENT.md`.
+- `backend/AGENT.md` and `frontend/AGENT.md` are subdirectory-scoped context files — prune and verify only; never mirror or sync them to each other or to root docs.
 - Core headers stay in this exact order: `## Project` · `## Stack` · `## Gaps & Outstanding Work` · `## Status` · `## Architecture (Immutable)` · `## API Response Contract (Immutable)` · `## Testing` · `## Coding Conventions (Immutable)` · `## Response Style (Immutable)`.
 - `CLAUDE.md` and `AGENTS.md` carry full content; section conflicts prefer the most recently edited source, including uncommitted file mtimes when git history is insufficient.
 - `ANTIGRAVITY.md` carries full content only for `## Gaps & Outstanding Work` and `## Status`; `## Status` must mirror `CLAUDE.md` exactly, and other sections contain exactly `See CLAUDE.md §[section name].`
-- `agents/*.md` is source of truth; never hand-edit generated mirrors in `.claude/agents/`, `.antigravity/agents/`, or root `tidy.md`.
+- `agents/*.md` is source of truth; `.claude/agents/`, `.antigravity/agents/`, and root `tidy.md` are generated mirrors — never hand-edit them directly.
 - Run `./syncAgents.sh` only after editing `agents/*.md`; do not run it for unrelated doc cleanup.
 - Keep only the 5 most recent `[x]` entries in `GAPS.md` `## ✅ Resolved`; replace older entries with `- _+ N earlier resolved items — see git log for full history._`
 - For complete planning files, append one-line resolution to `GAPS.md` and delete the file; for incomplete planning files, remove `[x]` lines only.

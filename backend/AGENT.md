@@ -46,4 +46,3 @@ See CLAUDE.md §Architecture for JWT verification strategy.
 * Instruct Claude to return raw JSON only — no markdown markers. Parse with `JSON.parse` inside try-catch.
 * Return standard fallback values if `JSON.parse` fails (never crash the route).
 * System prompt must specify exact JSON shape: `taskName`, `dueDate` (ISO or null), `inferredCategory`, `suggestedPriority` (`low|medium|high`).
-* For streaming analytics, set `stream: true` and pipe segments with `text/event-stream` mime-type.

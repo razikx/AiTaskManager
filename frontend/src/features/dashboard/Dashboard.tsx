@@ -270,12 +270,6 @@ export function Dashboard(): React.JSX.Element {
 
     const aiData: ParsedTask = res.data.data;
 
-    // Map suggestedPriority ('low' | 'medium' | 'high') -> priority_score (0 | 1 | 2 | 3)
-    let mappedScore = 1;
-    if (aiData.suggestedPriority === 'high') mappedScore = 2;
-    if (aiData.suggestedPriority === 'low') mappedScore = 0;
-    if (rawInput.toLowerCase().includes('urgent')) mappedScore = 3;
-
     // Optimistically add the task before the DB round-trip
     const tempId = `temp-${Date.now()}`;
     const optimisticTask: Task = {
@@ -283,7 +277,7 @@ export function Dashboard(): React.JSX.Element {
       title: aiData.taskName,
       description: `Inferred Category: ${aiData.inferredCategory}`,
       due_date: aiData.dueDate ?? null,
-      priority_score: mappedScore,
+      priority_score: aiData.priority_score,
       status: 'todo',
       project_id: selectedProjectId,
       user_id: user!.id,
@@ -297,7 +291,7 @@ export function Dashboard(): React.JSX.Element {
         title: aiData.taskName,
         description: `Inferred Category: ${aiData.inferredCategory}`,
         due_date: aiData.dueDate,
-        priority_score: mappedScore,
+        priority_score: aiData.priority_score,
         project_id: selectedProjectId
       })
     );

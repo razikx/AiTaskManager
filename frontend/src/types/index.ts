@@ -39,5 +39,5 @@ export interface ParsedTask {
   taskName: string;
   dueDate: string | null;
   inferredCategory: string;
-  suggestedPriority: 'low' | 'medium' | 'high';
+  priority_score: number; // 0=low, 1=medium, 2=high, 3=urgent — normalized by backend
 }

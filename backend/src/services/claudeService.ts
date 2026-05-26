@@ -8,6 +8,14 @@ export interface ParsedTask {
   dueDate: string | null;
   inferredCategory: string;
   suggestedPriority: 'low' | 'medium' | 'high';
+  priority_score: number; // 0=low, 1=medium, 2=high, 3=urgent
+}
+
+function mapPriorityToScore(priority: 'low' | 'medium' | 'high', rawText: string): number {
+  if (rawText.toLowerCase().includes('urgent')) return 3;
+  if (priority === 'high') return 2;
+  if (priority === 'low') return 0;
+  return 1;
 }
 
 const anthropic = new Anthropic({
@@ -112,13 +120,15 @@ Do not wrap your output in markdown JSON blocks (\`\`\`json). Return raw JSON te
     const parsed: ParsedTask = JSON.parse(jsonString);
 
     // Validate properties are present and correctly typed
+    const suggestedPriority: 'low' | 'medium' | 'high' = ['low', 'medium', 'high'].includes(parsed.suggestedPriority)
+      ? parsed.suggestedPriority
+      : 'medium';
     return {
       taskName: parsed.taskName || rawText,
       dueDate: parsed.dueDate || null,
       inferredCategory: parsed.inferredCategory || 'Personal',
-      suggestedPriority: ['low', 'medium', 'high'].includes(parsed.suggestedPriority)
-        ? parsed.suggestedPriority
-        : 'medium'
+      suggestedPriority,
+      priority_score: mapPriorityToScore(suggestedPriority, rawText),
     };
   } catch (err) {
     console.error('[Claude Service] Error parsing task text via Claude API:', err);
@@ -193,9 +203,10 @@ function fallbackRegexParser(rawText: string): ParsedTask {
 
   return {
     taskName,
-    dueDate: null, // Hard to parse dates reliably via regex
+    dueDate: null,
     inferredCategory: category,
-    suggestedPriority: priority
+    suggestedPriority: priority,
+    priority_score: mapPriorityToScore(priority, rawText),
   };
 }
 

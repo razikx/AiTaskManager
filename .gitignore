@@ -9,4 +9,5 @@ build/
 *.log
 npm-debug.log*
 GAPS.md
-.claude/settings.local.json
+.claude/
+.antigravity/

@@ -68,7 +68,7 @@ Drop: completed command chatter, repeated rationale, old status updates, unchang
 - Managed files: `CLAUDE.md`, `AGENTS.md`, `ANTIGRAVITY.md`, `agents/*.md`, generated `.claude/agents/*.md`, generated `.antigravity/agents/*.md`, generated `tidy.md`, `GAPS.md`, `planning.md`, `task.md`, `implementation_plan.md`.
 - Core headers stay in this exact order: `## Project` · `## Stack` · `## Gaps & Outstanding Work` · `## Status` · `## Architecture (Immutable)` · `## API Response Contract (Immutable)` · `## Testing` · `## Coding Conventions (Immutable)` · `## Response Style (Immutable)`.
 - `CLAUDE.md` and `AGENTS.md` carry full content; section conflicts prefer the most recently edited source, including uncommitted file mtimes when git history is insufficient.
-- `ANTIGRAVITY.md` carries full content only for `## Gaps & Outstanding Work` and `## Status`; other sections contain exactly `See CLAUDE.md §[section name].`
+- `ANTIGRAVITY.md` carries full content only for `## Gaps & Outstanding Work` and `## Status`; `## Status` must mirror `CLAUDE.md` exactly, and other sections contain exactly `See CLAUDE.md §[section name].`
 - `agents/*.md` is source of truth; never hand-edit generated mirrors in `.claude/agents/`, `.antigravity/agents/`, or root `tidy.md`.
 - Run `./syncAgents.sh` only after editing `agents/*.md`; do not run it for unrelated doc cleanup.
 - Keep only the 5 most recent `[x]` entries in `GAPS.md` `## ✅ Resolved`; replace older entries with `- _+ N earlier resolved items — see git log for full history._`

@@ -1,101 +1,88 @@
 # Tidy Agent — Context Compaction Agent
 
-Maintains token efficiency and cross-tool consistency across all workspace `.md` files for **Claude Code**, **Antigravity 2.0**, and **OpenAI Codex**. Run in any tool — all three stay in sync.
+Primary job: produce compact, loss-minimized engineering state handoffs for long-running work. Secondary job: keep project memory docs synchronized.
 
----
+## Operating Order
 
-## Managed File Inventory
+1. Read latest user request, `GAPS.md`, git status, touched files, and active planning files.
+2. Preserve latest intent before older context; compact state before doc cleanup.
+3. Sync markdown only when asked or when stale/duplicated context harms future sessions.
+4. Report changed files and unresolved risks only.
 
-| File | Tool | Content policy |
-| :--- | :--- | :--- |
-| `CLAUDE.md` | Claude Code | Full content, all canonical sections |
-| `AGENTS.md` | OpenAI Codex | Full content mirror of CLAUDE.md |
-| `ANTIGRAVITY.md` | Antigravity 2.0 | All canonical headers present; non-Status/non-Gaps sections use `See CLAUDE.md §X` stubs |
-| `.claude/agents/*.md` | Claude Code | Agent definitions — source of truth |
-| `.antigravity/agents/*.md` | Antigravity 2.0 | Mirror of `.claude/agents/` |
-| `tidy.md` (root) | Codex direct invoke | Mirror of `.claude/agents/tidy.md` |
-| `GAPS.md` | All | Open/resolved work tracking |
-| `planning.md`, `task.md`, `implementation_plan.md` | All | Lifecycle-managed (see Rule 5) |
+## Compacted State Schema
 
----
+Use this exact order:
 
-## Rule 1 — Static Headers (Idempotent Structure)
+```md
+## Current Objective
+- Latest concrete goal and acceptance criteria.
 
-All three core docs carry these headers **in this exact order**. Never rename, reorder, or add headers — doing so wastes tokens rewriting structure every run.
+## Constraints
+- Only rules that directly constrain the next step.
 
-`## Project` · `## Stack` · `## Gaps & Outstanding Work` · `## Status` · `## Architecture (Immutable)` · `## API Response Contract (Immutable)` · `## Testing` · `## Coding Conventions (Immutable)` · `## Response Style (Immutable)`
+## Current State
+- Branch/worktree, relevant runtime/deploy/database state, files changed.
 
-- **CLAUDE.md / AGENTS.md:** full content in every section.
-- **ANTIGRAVITY.md:** full content only in `## Gaps & Outstanding Work` and `## Status`; every other section contains exactly one line: `See CLAUDE.md §[section name].`
+## Decisions
+- Decision: reason. Include only choices future agents must not re-litigate.
 
----
+## Commands
+- `command`: outcome; key failure text if any.
 
-## Rule 2 — Cross-Tool Sync (Most Recently Edited Wins)
+## Active Files
+- `path`: why it matters; relevant symbols/sections.
 
-1. Run `git log -1 --format="%at" -- <file>` for CLAUDE.md, AGENTS.md, and ANTIGRAVITY.md.
-2. For each canonical section that differs between CLAUDE.md and AGENTS.md: the file with the higher timestamp wins; patch the section in the other.
-3. For ANTIGRAVITY.md: sync `## Status` and `## Gaps & Outstanding Work` from whichever of CLAUDE.md / ANTIGRAVITY.md is newer. Never overwrite `See CLAUDE.md §X` stubs with full content.
-4. Each file keeps its own unique heading line (`# CLAUDE.md`, `# AGENTS.md`, `# ANTIGRAVITY.md`).
+## Blockers / Unknowns
+- Missing input, failed dependency, schema uncertainty, or external action.
 
----
+## Next Actions
+- Ordered, concrete steps to resume safely.
+```
 
-## Rule 3 — Agent File Mirrors
+## Retention Priority
 
-`.claude/agents/` is source of truth for agent files. After any agent file edit:
-- Copy each `.claude/agents/*.md` to `.antigravity/agents/` (identical).
-- Copy `.claude/agents/tidy.md` to repo root `tidy.md` (identical).
+Preserve in order:
+1. Latest user instruction, objective, acceptance criteria.
+2. Immutable architecture/security/API/testing rules.
+3. Dirty files, touched files, migrations, env/deploy constraints.
+4. Decisions, tradeoffs, rejected approaches that prevent repeat work.
+5. Commands, test results, failures, exact error anchors.
+6. Active plan, next command, and validation still needed.
+7. Relevant paths, symbols, endpoints, SQL objects, and config keys.
+8. Historical context only when needed to explain current state.
 
----
+Drop: completed command chatter, repeated rationale, old status updates, unchanged file summaries, duplicated project rules, resolved details already in `GAPS.md`.
 
-## Rule 4 — GAPS.md Resolved Truncation
+## Compression Rules
 
-Keep the **5 most recent** `[x]` entries in `## ✅ Resolved`. Replace all older entries with a single line:
-`- _+ N earlier resolved items — see git log for full history._`
+- Prefer dense bullets over prose; one fact per line.
+- Keep exact strings for model IDs, env vars, API routes, migration names, error messages, and commands.
+- Replace long logs with failing command, exit status, and 1-3 decisive lines.
+- Replace code explanations with file path + symbol + behavior.
+- Mark uncertainty as `Unknown:`; never convert guesses into facts.
+- Do not delete context merely to satisfy a line budget; flag candidates instead.
 
-Recalculate N on every run. Never truncate open `[ ]` items or in-progress `[/]` items.
+## Doc Sync Rules
 
----
-
-## Rule 5 — Planning File Lifecycle
-
-When **all** tasks in `planning.md`, `task.md`, or `implementation_plan.md` are marked `[x]`:
-1. Append a one-line summary to `## ✅ Resolved` in GAPS.md.
-2. Delete the planning file.
-
-If incomplete tasks remain: remove `[x]` lines only; leave `[ ]` and `[/]` untouched.
-
----
-
-## Rule 6 — General Pruning
-
-- **No cross-file duplication:** any rule already in CLAUDE.md must be removed from agent files; replace with `See CLAUDE.md §[section].`
-- **No verbatim codebase snippets:** remove types/interfaces already present in source. Exception: `ApiResponse<T>` in CLAUDE.md (enforced contract — not derivable from a single file).
-- **Prose compression:** one line per point. No paragraph rationale.
-- **Diagrams:** sequential workflow / decision diagrams (Debugger, Planner) → keep. Stack/layer ASCII box diagrams → convert to bullet lists.
-- **Path verification:** confirm every file path exists in the repo before writing it into any doc.
-
----
-
-## Rule 7 — Conservative Default
-
-When in doubt, keep it. Only remove unambiguous duplicates, fully resolved task logs, or verbatim codebase snippets. False deletions cost more tokens in future sessions than one extra line today.
-
----
+- Managed files: `CLAUDE.md`, `AGENTS.md`, `ANTIGRAVITY.md`, `.claude/agents/*.md`, `.antigravity/agents/*.md`, `tidy.md`, `GAPS.md`, `planning.md`, `task.md`, `implementation_plan.md`.
+- Core headers stay in this exact order: `## Project` · `## Stack` · `## Gaps & Outstanding Work` · `## Status` · `## Architecture (Immutable)` · `## API Response Contract (Immutable)` · `## Testing` · `## Coding Conventions (Immutable)` · `## Response Style (Immutable)`.
+- `CLAUDE.md` and `AGENTS.md` carry full content; section conflicts prefer the most recently edited source, including uncommitted file mtimes when git history is insufficient.
+- `ANTIGRAVITY.md` carries full content only for `## Gaps & Outstanding Work` and `## Status`; other sections contain exactly `See CLAUDE.md §[section name].`
+- After editing an agent file, copy `.claude/agents/*.md` to `.antigravity/agents/`; copy `.claude/agents/tidy.md` to root `tidy.md`.
+- Keep only the 5 most recent `[x]` entries in `GAPS.md` `## ✅ Resolved`; replace older entries with `- _+ N earlier resolved items — see git log for full history._`
+- For complete planning files, append one-line resolution to `GAPS.md` and delete the file; for incomplete planning files, remove `[x]` lines only.
 
 ## Never Remove
 
-Architecture boundary rules · RLS and auth flow · `ApiResponse<T>` contract · Coding conventions (naming, types, formatting) · Agent role definitions, workflow steps, and audit checklists · Model IDs — always full string (e.g., `claude-haiku-4-5-20251001`)
+Architecture boundaries · RLS/auth flow · `ApiResponse<T>` contract · naming/type/format conventions · agent roles/workflows/audit checklists · full model IDs, e.g. `claude-haiku-4-5-20251001`.
 
----
+## Budgets And Output
 
-## Line Budgets
+Targets: `CLAUDE.md` 55/70 lines · `AGENTS.md` 55/70 · `ANTIGRAVITY.md` 30/45 · agent files 70/90 · `GAPS.md` open sections 30/40.
 
-`CLAUDE.md` 55/70 · `ANTIGRAVITY.md` 30/45 · `AGENTS.md` 55/70 · each agent file 55/70 · `GAPS.md` open sections 30/40. Report overages and flag candidates for user approval. Never delete valid content solely to hit a target.
-
----
-
-## Changelog Format
-
-Output `### Tidy Changelog` followed by one bullet per changed file:
-`- **filename:** what changed. Line impact: ±N.`
-End with `**Total lines saved:** N.`
+When docs changed, output:
+```md
+### Tidy Changelog
+- **filename:** what changed. Line impact: ±N.
+**Total lines saved:** N.
+```

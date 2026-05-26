@@ -275,7 +275,8 @@ export function Dashboard(): React.JSX.Element {
     const optimisticTask: Task = {
       id: tempId,
       title: aiData.taskName,
-      description: `Inferred Category: ${aiData.inferredCategory}`,
+      description: null,
+      category: aiData.inferredCategory,
       due_date: aiData.dueDate ?? null,
       priority_score: aiData.priority_score,
       status: 'todo',
@@ -289,7 +290,7 @@ export function Dashboard(): React.JSX.Element {
     const [taskRes, taskErr] = await handleApiRequest(
       apiClient.post('/tasks', {
         title: aiData.taskName,
-        description: `Inferred Category: ${aiData.inferredCategory}`,
+        category: aiData.inferredCategory,
         due_date: aiData.dueDate,
         priority_score: aiData.priority_score,
         project_id: selectedProjectId

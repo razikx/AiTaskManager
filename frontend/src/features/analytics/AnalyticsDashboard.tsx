@@ -52,13 +52,7 @@ export function AnalyticsDashboard({ projects }: AnalyticsDashboardProps): React
   const todoTasksCount = filteredTasks.filter((t) => t.status === 'todo').length;
   const completionRate = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
-  // Group tasks by category
-  // Description field stores "Inferred Category: Work"
-  const getCategoryFromTask = (task: Task): string => {
-    if (!task.description) return 'Personal';
-    const match = task.description.match(/Inferred Category:\s*(\w+)/i);
-    return match ? match[1] : 'Personal';
-  };
+  const getCategoryFromTask = (task: Task): string => task.category ?? 'Personal';
 
   const categoriesMap: { [key: string]: number } = {};
   filteredTasks.forEach((task) => {

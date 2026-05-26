@@ -20,6 +20,7 @@ const isoDateSchema = z.string().datetime({
 const createTaskBodySchema = z.object({
   title: z.string().trim().min(1, 'Task title is required.').max(200, 'Task title must not exceed 200 characters.'),
   description: z.string().trim().min(1, 'Description cannot be empty.').max(2000, 'Description must not exceed 2000 characters.').nullable().optional(),
+  category: z.string().trim().min(1, 'Category cannot be empty.').max(50, 'Category must not exceed 50 characters.').nullable().optional(),
   due_date: isoDateSchema.nullable().optional(),
   priority_score: z.number().int().min(0).max(3).optional(),
   status: z.enum(['todo', 'in_progress', 'completed']).optional(),
@@ -30,6 +31,7 @@ const updateTaskBodySchema = createTaskBodySchema
   .pick({
     title: true,
     description: true,
+    category: true,
     due_date: true,
     priority_score: true,
     status: true
@@ -98,12 +100,13 @@ export async function createTask(
       return sendValidationError(res, bodyResult.error);
     }
 
-    const { title, description, due_date, priority_score, status, project_id } = bodyResult.data;
+    const { title, description, category, due_date, priority_score, status, project_id } = bodyResult.data;
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
     const taskPayload = {
       title,
       description: description ?? null,
+      category: category ?? null,
       due_date: due_date ?? null,
       priority_score: priority_score ?? 0,
       status: status || 'todo',
@@ -153,10 +156,11 @@ export async function updateTask(
     }
 
     const { id } = paramsResult.data;
-    const { title, description, due_date, priority_score, status } = bodyResult.data;
+    const { title, description, category, due_date, priority_score, status } = bodyResult.data;
     const allowedUpdates: Record<string, unknown> = {};
     if (title !== undefined) allowedUpdates.title = title;
     if (description !== undefined) allowedUpdates.description = description;
+    if (category !== undefined) allowedUpdates.category = category;
     if (due_date !== undefined) allowedUpdates.due_date = due_date;
     if (priority_score !== undefined) allowedUpdates.priority_score = priority_score;
     if (status !== undefined) allowedUpdates.status = status;

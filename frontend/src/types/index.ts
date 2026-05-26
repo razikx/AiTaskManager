@@ -17,13 +17,14 @@ export interface Task {
   id: string;
   title: string;
   description: string | null;
+  category: string | null;
   due_date: string | null;
   priority_score: number;
   status: TaskStatus;
   project_id: string | null;
   user_id: string;
   created_at: string;
-  subtasks?: Subtask[]; // Hydrated inside frontend if needed or requested
+  subtasks?: Subtask[];
 }
 
 export interface Subtask {

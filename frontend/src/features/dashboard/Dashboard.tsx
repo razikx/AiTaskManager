@@ -135,9 +135,23 @@ export function Dashboard(): React.JSX.Element {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newTask = payload.new as Task;
-            // Only add if it belongs to currently selected project
             if (newTask.project_id === selectedProjectIdRef.current) {
-              setTasks((prev) => [newTask, ...prev]);
+              setTasks((prev) => {
+                if (prev.some((t) => t.id === newTask.id)) return prev;
+                // Replace optimistic temp placeholder if one matches
+                const tempIdx = prev.findIndex(
+                  (t) =>
+                    t.id.startsWith('temp-') &&
+                    t.title === newTask.title &&
+                    t.project_id === newTask.project_id
+                );
+                if (tempIdx !== -1) {
+                  const next = [...prev];
+                  next[tempIdx] = newTask;
+                  return next;
+                }
+                return [newTask, ...prev];
+              });
             }
           } else if (payload.eventType === 'UPDATE') {
             const updatedTask = payload.new as Task;
@@ -257,13 +271,27 @@ export function Dashboard(): React.JSX.Element {
     const aiData: ParsedTask = res.data.data;
 
     // Map suggestedPriority ('low' | 'medium' | 'high') -> priority_score (0 | 1 | 2 | 3)
-    let mappedScore = 1; // Default medium priority score
-    if (aiData.suggestedPriority === 'high') mappedScore = 2; // High priority
-    if (aiData.suggestedPriority === 'low') mappedScore = 0; // Low priority
-    // Special high-priority check if keywords like urgent exist
-    if (rawInput.toLowerCase().includes('urgent')) mappedScore = 3; 
+    let mappedScore = 1;
+    if (aiData.suggestedPriority === 'high') mappedScore = 2;
+    if (aiData.suggestedPriority === 'low') mappedScore = 0;
+    if (rawInput.toLowerCase().includes('urgent')) mappedScore = 3;
 
-    // Create the task using our standard backend CRUD endpoint
+    // Optimistically add the task before the DB round-trip
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTask: Task = {
+      id: tempId,
+      title: aiData.taskName,
+      description: `Inferred Category: ${aiData.inferredCategory}`,
+      due_date: aiData.dueDate ?? null,
+      priority_score: mappedScore,
+      status: 'todo',
+      project_id: selectedProjectId,
+      user_id: user!.id,
+      created_at: new Date().toISOString(),
+    };
+    setTasks((prev) => [optimisticTask, ...prev]);
+    setIsAiLoading(false);
+
     const [taskRes, taskErr] = await handleApiRequest(
       apiClient.post('/tasks', {
         title: aiData.taskName,
@@ -274,10 +302,18 @@ export function Dashboard(): React.JSX.Element {
       })
     );
 
-    setIsAiLoading(false);
-
     if (taskErr || !taskRes?.data?.success) {
+      setTasks((prev) => prev.filter((t) => t.id !== tempId));
       setAiError(taskErr?.message || 'Failed to create task in database.');
+    } else {
+      const realTask: Task = taskRes.data.data;
+      setTasks((prev) => {
+        // Realtime may have already swapped the temp; if so just remove it
+        if (prev.some((t) => t.id === realTask.id)) {
+          return prev.filter((t) => t.id !== tempId);
+        }
+        return prev.map((t) => (t.id === tempId ? realTask : t));
+      });
     }
   };
 

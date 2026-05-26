@@ -1,5 +1,5 @@
 import React, { useState, useTransition } from 'react';
-import type { Task, TaskStatus } from '../../types';
+import type { Subtask, Task, TaskStatus } from '../../types';
 import { SubtaskManager } from './SubtaskManager';
 import { apiClient, handleApiRequest } from '../../services/apiClient';
 import { Calendar, CheckCircle2, Play, Circle, Trash2, ChevronDown, ChevronUp, Pencil, Check, X } from 'lucide-react';
@@ -41,6 +41,8 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
   };
 
   const badge = getPriorityBadge(task.priority_score);
+  const subtasks = task.subtasks || [];
+  const completedSubtasks = subtasks.filter((subtask) => subtask.is_completed).length;
 
   // Format date cleanly
   const formatDate = (dateStr: string | null) => {
@@ -173,6 +175,13 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
                     <span>{formatDate(task.due_date)}</span>
                   </span>
                 )}
+
+                {subtasks.length > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-slate-400 bg-slate-950/40 border border-white/5 rounded-full px-2 py-0.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-accent" />
+                    <span>{completedSubtasks}/{subtasks.length} done</span>
+                  </span>
+                )}
               </div>
 
               <h3 className={`font-display text-base font-semibold leading-tight text-white mb-1 ${task.status === 'completed' ? 'line-through text-slate-500' : ''}`}>
@@ -271,7 +280,12 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
       {/* Subtask checklist manager drawer */}
       {isExpanded && (
         <div className="mt-4 pt-4 border-t border-white/5 animate-fade-in">
-          <SubtaskManager taskId={task.id} />
+          <SubtaskManager
+            taskId={task.id}
+            onSubtasksChange={(nextSubtasks: Subtask[]) => {
+              onUpdate({ ...task, subtasks: nextSubtasks });
+            }}
+          />
         </div>
       )}
     </div>

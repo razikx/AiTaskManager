@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useRef, useTransition } from 'react';
 import type { Subtask } from '../../types';
 import { apiClient, handleApiRequest } from '../../services/apiClient';
 import { Plus, Trash2, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 
 interface SubtaskManagerProps {
   taskId: string;
+  onSubtasksChange?: (subtasks: Subtask[]) => void;
 }
 
-export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Element {
+export function SubtaskManager({ taskId, onSubtasksChange }: SubtaskManagerProps): React.JSX.Element {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,19 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
   const [isPending, startTransition] = useTransition();
   const [isGenerating, setIsGenerating] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const onSubtasksChangeRef = useRef(onSubtasksChange);
+
+  useEffect(() => {
+    onSubtasksChangeRef.current = onSubtasksChange;
+  }, [onSubtasksChange]);
+
+  const updateSubtasks = (updater: React.SetStateAction<Subtask[]>) => {
+    setSubtasks((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      onSubtasksChangeRef.current?.(next);
+      return next;
+    });
+  };
 
   const handleGenerateChecklist = async () => {
     setIsGenerating(true);
@@ -26,7 +40,7 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
     if (!err && res?.data?.success) {
       const newSubtasks = res.data.data;
       if (Array.isArray(newSubtasks)) {
-        setSubtasks((prev) => [...prev, ...newSubtasks]);
+        updateSubtasks((prev) => [...prev, ...newSubtasks]);
       }
     }
   };
@@ -40,7 +54,7 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
       );
       if (!ignore) {
         if (!err && res?.data?.success) {
-          setSubtasks(res.data.data);
+          updateSubtasks(res.data.data);
         } else if (err) {
           setFetchError('Could not load checklist.');
         }
@@ -59,7 +73,7 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
     startTransition(async () => {
       const updatedStatus = !subtask.is_completed;
       // Optimistic UI update
-      setSubtasks((prev) =>
+      updateSubtasks((prev) =>
         prev.map((s) => (s.id === subtask.id ? { ...s, is_completed: updatedStatus } : s))
       );
 
@@ -69,7 +83,7 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
 
       if (err || !res?.data?.success) {
         // Rollback on error
-        setSubtasks((prev) =>
+        updateSubtasks((prev) =>
           prev.map((s) => (s.id === subtask.id ? { ...s, is_completed: !updatedStatus } : s))
         );
       }
@@ -84,12 +98,25 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
     const titleToSubmit = newTitle.trim();
     setNewTitle('');
 
+    const tempId = `temp-${Date.now()}`;
+    const optimisticSubtask: Subtask = {
+      id: tempId,
+      task_id: taskId,
+      title: titleToSubmit,
+      is_completed: false,
+      created_at: new Date().toISOString(),
+    };
+    updateSubtasks((prev) => [...prev, optimisticSubtask]);
+
     const [res, err] = await handleApiRequest(
       apiClient.post(`/tasks/${taskId}/subtasks`, { title: titleToSubmit })
     );
 
     if (!err && res?.data?.success) {
-      setSubtasks((prev) => [...prev, res.data.data]);
+      const realSubtask: Subtask = res.data.data;
+      updateSubtasks((prev) => prev.map((s) => (s.id === tempId ? realSubtask : s)));
+    } else {
+      updateSubtasks((prev) => prev.filter((s) => s.id !== tempId));
     }
   };
 
@@ -97,12 +124,12 @@ export function SubtaskManager({ taskId }: SubtaskManagerProps): React.JSX.Eleme
   const handleDeleteSubtask = async (id: string) => {
     // Optimistic UI update
     const previousSubtasks = [...subtasks];
-    setSubtasks((prev) => prev.filter((s) => s.id !== id));
+    updateSubtasks((prev) => prev.filter((s) => s.id !== id));
 
     const [res, err] = await handleApiRequest(apiClient.delete(`/subtasks/${id}`));
     if (err || !res?.data?.success) {
       // Rollback on error
-      setSubtasks(previousSubtasks);
+      updateSubtasks(previousSubtasks);
     }
   };
 

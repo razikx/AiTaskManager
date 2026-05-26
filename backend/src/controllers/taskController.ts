@@ -17,7 +17,7 @@ export async function getTasks(
 
     let query = supabase
       .from('tasks')
-      .select('*')
+      .select('*, subtasks(*)')
       .order('created_at', { ascending: false });
 
     if (projectId && typeof projectId === 'string') {

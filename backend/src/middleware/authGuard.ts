@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import crypto, { type JsonWebKey } from 'crypto';
 
 // Extend Express Request interface to include authenticated user details
 export interface AuthenticatedRequest extends Request {
@@ -10,14 +10,9 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-interface JWK {
+interface JWK extends JsonWebKey {
   kty: string;
-  use?: string;
-  alg?: string;
   kid: string;
-  crv?: string;
-  x?: string;
-  y?: string;
 }
 
 // Memory cache for JWKS keys to optimize request performance
@@ -82,7 +77,7 @@ async function getPublicKeyFromJWKS(jwksUrl: string, kid: string): Promise<crypt
   }
 
   return crypto.createPublicKey({
-    key: jwk as any,
+    key: jwk,
     format: 'jwk',
   });
 }

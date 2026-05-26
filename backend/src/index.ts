@@ -59,18 +59,30 @@ app.use('/api', authGuard, apiRouter);
 // 4. SENTRY + CENTRAL ERROR HANDLERS
 Sentry.setupExpressErrorHandler(app);
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  const statusCode = err.status || 500;
-  const errorCode = err.code || 'INTERNAL_SERVER_ERROR';
+interface AppError extends Error {
+  status?: number;
+  code?: string;
+  details?: unknown;
+}
 
-  console.error(`[Error Handler] ${errorCode}: ${err.message}`, err);
+function isAppError(err: unknown): err is AppError {
+  return err instanceof Error;
+}
+
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  const appErr = isAppError(err) ? err : undefined;
+  const statusCode = appErr?.status ?? 500;
+  const errorCode = appErr?.code ?? 'INTERNAL_SERVER_ERROR';
+  const message = appErr?.message ?? 'An unexpected error occurred.';
+
+  console.error(`[Error Handler] ${errorCode}: ${message}`, err);
 
   res.status(statusCode).json({
     success: false,
     error: {
       code: errorCode,
-      message: err.message || 'An unexpected error occurred.',
-      details: process.env.NODE_ENV === 'development' ? err.details || null : undefined
+      message,
+      details: process.env.NODE_ENV === 'development' ? appErr?.details ?? null : undefined
     }
   });
 });

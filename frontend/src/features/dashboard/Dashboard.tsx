@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useTransition, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useTransition, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { Project, Task, ParsedTask } from '../../types';
 import { supabase } from '../../services/supabaseClient';
 import { apiClient, handleApiRequest } from '../../services/apiClient';
 import { TaskBoard } from '../tasks/TaskBoard';
-import { AnalyticsDashboard } from '../analytics/AnalyticsDashboard';
 import {
   LogOut,
   Plus,
@@ -18,6 +17,10 @@ import {
   Pencil,
   Check
 } from 'lucide-react';
+
+const AnalyticsDashboard = React.lazy(() =>
+  import('../analytics/AnalyticsDashboard').then((module) => ({ default: module.AnalyticsDashboard }))
+);
 
 export function Dashboard(): React.JSX.Element {
   const { user, signOut } = useAuth();
@@ -473,7 +476,16 @@ export function Dashboard(): React.JSX.Element {
           )}
 
           {currentView === 'analytics' ? (
-            <AnalyticsDashboard projects={projects} />
+            <Suspense
+              fallback={
+                <div className="flex flex-col justify-center items-center py-20 gap-4 text-slate-400">
+                  <div className="w-10 h-10 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin"></div>
+                  <p className="text-sm font-medium">Loading analytics...</p>
+                </div>
+              }
+            >
+              <AnalyticsDashboard projects={projects} />
+            </Suspense>
           ) : (
             <>
               {/* Smart AI Prompt Area */}

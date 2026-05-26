@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getProjects, createProject, renameProject, deleteProject } from '../controllers/projectController.js';
-import { getTasks, createTask, updateTask, deleteTask } from '../controllers/taskController.js';
+import { getTasks, getTaskAnalytics, createTask, updateTask, deleteTask } from '../controllers/taskController.js';
 import { getSubtasksForTask, createSubtask, updateSubtask, deleteSubtask, bulkCreateSubtasks } from '../controllers/subtaskController.js';
 import { parseTask, generateSubtasks } from '../controllers/aiController.js';
 import { aiRateLimiter } from '../middleware/aiRateLimit.js';
@@ -20,6 +20,7 @@ projectRouter.delete('/:id', deleteProject);
 // TASK & SUBTASK SUB-ROUTES
 //---------------------------------------------------------
 const taskRouter = Router();
+taskRouter.get('/analytics', getTaskAnalytics);
 taskRouter.get('/', getTasks);
 taskRouter.post('/', createTask);
 taskRouter.patch('/:id', updateTask);

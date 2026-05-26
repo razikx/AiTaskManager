@@ -5,13 +5,25 @@ import { Kanban, List, AlertCircle, ArrowUpDown } from 'lucide-react';
 
 interface TaskBoardProps {
   tasks: Task[];
+  hasMoreTasks: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
   onDelete: (id: string) => void;
   onUpdate: (task: Task) => void;
   onMutateStart: (id: string) => void;
   onMutateEnd: (id: string) => void;
 }
 
-export function TaskBoard({ tasks, onDelete, onUpdate, onMutateStart, onMutateEnd }: TaskBoardProps): React.JSX.Element {
+export function TaskBoard({
+  tasks,
+  hasMoreTasks,
+  isLoadingMore,
+  onLoadMore,
+  onDelete,
+  onUpdate,
+  onMutateStart,
+  onMutateEnd
+}: TaskBoardProps): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [sortByPriority, setSortByPriority] = useState(true);
 
@@ -155,6 +167,18 @@ export function TaskBoard({ tasks, onDelete, onUpdate, onMutateStart, onMutateEn
           {getSortedTasks(tasks).map((task) => (
             <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} onMutateStart={onMutateStart} onMutateEnd={onMutateEnd} />
           ))}
+        </div>
+      )}
+
+      {hasMoreTasks && (
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="px-4 py-2 bg-slate-950/40 border border-white/10 hover:border-brand-primary/40 text-slate-300 hover:text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isLoadingMore ? 'Loading...' : 'Load more tasks'}
+          </button>
         </div>
       )}
     </div>

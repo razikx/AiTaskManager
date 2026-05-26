@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTask, deleteTask, getTasks, updateTask } from './taskController.js';
+import { createTask, deleteTask, getTaskAnalytics, getTasks, updateTask } from './taskController.js';
 import { getUserSupabaseClient } from '../config/supabaseClientHelper.js';
 import { createMockNext, createMockRequest, createMockResponse, createSupabaseQueryMock } from '../test/controllerTestUtils.js';
 
@@ -47,7 +47,106 @@ describe('taskController', () => {
     expect(from).toHaveBeenCalledWith('tasks');
     expect(query.select).toHaveBeenCalledWith('*, subtasks(*)');
     expect(query.eq).toHaveBeenCalledWith('project_id', projectId);
+    expect(query.limit).toHaveBeenCalledWith(26);
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('returns cursor-paginated task reads with a next cursor', async () => {
+    const tasks = Array.from({ length: 26 }, (_, index) => ({
+      id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      created_at: `2026-05-26T12:${String(59 - index).padStart(2, '0')}:00.000Z`
+    }));
+    const { query } = mockTable({ data: tasks, error: null });
+    const req = createMockRequest({ query: { projectId, limit: '25' } });
+    const res = createMockResponse();
+
+    await getTasks(req, res, createMockNext());
+
+    expect(query.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(query.order).toHaveBeenCalledWith('id', { ascending: false });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: {
+        tasks: tasks.slice(0, 25),
+        nextCursor: expect.any(String)
+      }
+    });
+  });
+
+  it('rejects invalid task cursors before Supabase access', async () => {
+    const req = createMockRequest({ query: { projectId, cursor: 'not-a-cursor' } });
+    const res = createMockResponse();
+
+    await getTasks(req, res, createMockNext());
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(getUserSupabaseClient).not.toHaveBeenCalled();
+  });
+
+  it('returns aggregated task analytics without selecting subtask rows', async () => {
+    const filteredQuery = createSupabaseQueryMock({
+      data: [
+        {
+          id: taskId,
+          title: 'Write tests',
+          category: 'Work',
+          due_date: '2026-05-25T12:00:00.000Z',
+          priority_score: 3,
+          status: 'todo',
+          project_id: projectId
+        },
+        {
+          id: '10000000-0000-4000-8000-000000000002',
+          title: 'Ship feature',
+          category: null,
+          due_date: null,
+          priority_score: 1,
+          status: 'completed',
+          project_id: projectId
+        }
+      ],
+      error: null
+    });
+    const allQuery = createSupabaseQueryMock({
+      data: [
+        { project_id: projectId, status: 'todo' },
+        { project_id: projectId, status: 'completed' }
+      ],
+      error: null
+    });
+    const from = vi.fn()
+      .mockReturnValueOnce(filteredQuery)
+      .mockReturnValueOnce(allQuery);
+    vi.mocked(getUserSupabaseClient).mockReturnValue({ from } as never);
+    const req = createMockRequest({ query: { projectId } });
+    const res = createMockResponse();
+
+    await getTaskAnalytics(req, res, createMockNext());
+
+    expect(filteredQuery.select).toHaveBeenCalledWith('id,title,category,due_date,priority_score,status,project_id');
+    expect(filteredQuery.eq).toHaveBeenCalledWith('project_id', projectId);
+    expect(allQuery.select).toHaveBeenCalledWith('project_id,status');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: expect.objectContaining({
+        totalTasksCount: 2,
+        completedTasksCount: 1,
+        priorityCounts: {
+          urgent: 1,
+          high: 0,
+          medium: 1,
+          low: 0
+        },
+        projectMetrics: [{
+          id: projectId,
+          total: 2,
+          completed: 1,
+          rate: 50
+        }]
+      })
+    });
   });
 
   it('rejects invalid create body values before Supabase access', async () => {

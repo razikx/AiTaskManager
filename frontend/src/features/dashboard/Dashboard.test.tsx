@@ -51,7 +51,10 @@ describe('Dashboard task creation flow', () => {
       return {
         data: {
           success: true,
-          data: []
+          data: {
+            tasks: [],
+            nextCursor: null
+          }
         }
       };
     });

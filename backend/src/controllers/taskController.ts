@@ -9,7 +9,18 @@ const taskIdParamsSchema = z.object({
 });
 
 const getTasksQuerySchema = z.object({
+  projectId: z.string().uuid('Project ID must be a valid UUID.').optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  cursor: z.string().min(1).optional()
+});
+
+const getTaskAnalyticsQuerySchema = z.object({
   projectId: z.string().uuid('Project ID must be a valid UUID.').optional()
+});
+
+const taskCursorSchema = z.object({
+  created_at: z.string().datetime({ offset: true }),
+  id: z.string().uuid()
 });
 
 const isoDateSchema = z.string().datetime({
@@ -41,6 +52,35 @@ const updateTaskBodySchema = createTaskBodySchema
     message: 'No valid fields provided for update.'
   });
 
+interface TaskCursor {
+  created_at: string;
+  id: string;
+}
+
+interface AnalyticsTaskRow {
+  id: string;
+  title: string;
+  category: string | null;
+  due_date: string | null;
+  priority_score: number;
+  status: 'todo' | 'in_progress' | 'completed';
+  project_id: string | null;
+}
+
+function encodeTaskCursor(task: TaskCursor): string {
+  return Buffer.from(JSON.stringify(task), 'utf8').toString('base64url');
+}
+
+function decodeTaskCursor(cursor: string): TaskCursor | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as unknown;
+    const result = taskCursorSchema.safeParse(parsed);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Fetch tasks belonging to the user.
  * Optional query parameter: ?projectId=xxxx-xxxx-xxxx-xxxx to filter by project.
@@ -56,16 +96,32 @@ export async function getTasks(
       return sendValidationError(res, queryResult.error);
     }
 
-    const { projectId } = queryResult.data;
+    const { projectId, limit, cursor } = queryResult.data;
+    const decodedCursor = cursor ? decodeTaskCursor(cursor) : null;
+    if (cursor && !decodedCursor) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Invalid task cursor.' }
+      });
+    }
+
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
     let query = supabase
       .from('tasks')
       .select('*, subtasks(*)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(limit + 1);
 
     if (projectId) {
       query = query.eq('project_id', projectId);
+    }
+
+    if (decodedCursor) {
+      query = query.or(
+        `created_at.lt.${decodedCursor.created_at},and(created_at.eq.${decodedCursor.created_at},id.lt.${decodedCursor.id})`
+      );
     }
 
     const { data, error } = await query;
@@ -77,9 +133,137 @@ export async function getTasks(
       });
     }
 
+    const tasks = data ?? [];
+    const page = tasks.slice(0, limit);
+    const nextTask = tasks.length > limit ? page[page.length - 1] : null;
+
     return res.status(200).json({
       success: true,
-      data
+      data: {
+        tasks: page,
+        nextCursor: nextTask ? encodeTaskCursor({ created_at: nextTask.created_at, id: nextTask.id }) : null
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Fetch aggregated task analytics for the user without returning full task rows.
+ * Optional query parameter: ?projectId=xxxx-xxxx-xxxx-xxxx to filter summary metrics.
+ */
+export async function getTaskAnalytics(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const queryResult = getTaskAnalyticsQuerySchema.safeParse(req.query);
+    if (!queryResult.success) {
+      return sendValidationError(res, queryResult.error);
+    }
+
+    const { projectId } = queryResult.data;
+    const supabase = getUserSupabaseClient(req.headers.authorization);
+    const selectedColumns = 'id,title,category,due_date,priority_score,status,project_id';
+
+    let filteredQuery = supabase
+      .from('tasks')
+      .select(selectedColumns);
+
+    if (projectId) {
+      filteredQuery = filteredQuery.eq('project_id', projectId);
+    }
+
+    const [{ data: filteredData, error: filteredError }, { data: allData, error: allError }] = await Promise.all([
+      filteredQuery,
+      supabase.from('tasks').select('project_id,status')
+    ]);
+
+    if (filteredError || allError) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'DATABASE_ERROR', message: filteredError?.message ?? allError?.message ?? 'Failed to load task analytics.' }
+      });
+    }
+
+    const tasks = (filteredData ?? []) as AnalyticsTaskRow[];
+    const allTasks = (allData ?? []) as Pick<AnalyticsTaskRow, 'project_id' | 'status'>[];
+    const now = new Date();
+    const dueSoonCutoff = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const totalTasksCount = tasks.length;
+    const completedTasksCount = tasks.filter((task) => task.status === 'completed').length;
+    const activeTasksCount = tasks.filter((task) => task.status === 'in_progress').length;
+    const todoTasksCount = tasks.filter((task) => task.status === 'todo').length;
+    const completionRate = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
+    const categories = Object.entries(
+      tasks.reduce<Record<string, number>>((acc, task) => {
+        const category = task.category ?? 'Personal';
+        acc[category] = (acc[category] ?? 0) + 1;
+        return acc;
+      }, {})
+    )
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const priorityCounts = {
+      urgent: tasks.filter((task) => task.priority_score === 3).length,
+      high: tasks.filter((task) => task.priority_score === 2).length,
+      medium: tasks.filter((task) => task.priority_score === 1).length,
+      low: tasks.filter((task) => task.priority_score === 0).length
+    };
+
+    const scheduleTask = (task: AnalyticsTaskRow) => ({
+      id: task.id,
+      title: task.title,
+      due_date: task.due_date
+    });
+    const overdueTasks = tasks
+      .filter((task) => task.status !== 'completed' && task.due_date && new Date(task.due_date) < now)
+      .sort((a, b) => new Date(a.due_date ?? '').getTime() - new Date(b.due_date ?? '').getTime())
+      .slice(0, 10)
+      .map(scheduleTask);
+    const dueSoonTasks = tasks
+      .filter((task) => {
+        if (task.status === 'completed' || !task.due_date) return false;
+        const dueDate = new Date(task.due_date);
+        return dueDate >= now && dueDate <= dueSoonCutoff;
+      })
+      .sort((a, b) => new Date(a.due_date ?? '').getTime() - new Date(b.due_date ?? '').getTime())
+      .slice(0, 10)
+      .map(scheduleTask);
+
+    const projectMetrics = Object.entries(
+      allTasks.reduce<Record<string, { total: number; completed: number }>>((acc, task) => {
+        if (!task.project_id) return acc;
+        const metric = acc[task.project_id] ?? { total: 0, completed: 0 };
+        metric.total += 1;
+        if (task.status === 'completed') metric.completed += 1;
+        acc[task.project_id] = metric;
+        return acc;
+      }, {})
+    ).map(([id, metric]) => ({
+      id,
+      total: metric.total,
+      completed: metric.completed,
+      rate: metric.total > 0 ? Math.round((metric.completed / metric.total) * 100) : 0
+    })).sort((a, b) => b.rate - a.rate);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalTasksCount,
+        completedTasksCount,
+        activeTasksCount,
+        todoTasksCount,
+        completionRate,
+        categories,
+        priorityCounts,
+        overdueTasks,
+        dueSoonTasks,
+        projectMetrics
+      }
     });
   } catch (err) {
     next(err);

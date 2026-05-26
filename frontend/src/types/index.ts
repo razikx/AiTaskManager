@@ -27,6 +27,42 @@ export interface Task {
   subtasks?: Subtask[];
 }
 
+export interface PaginatedTasks {
+  tasks: Task[];
+  nextCursor: string | null;
+}
+
+export interface TaskScheduleAlert {
+  id: string;
+  title: string;
+  due_date: string | null;
+}
+
+export interface TaskProjectMetric {
+  id: string;
+  total: number;
+  completed: number;
+  rate: number;
+}
+
+export interface TaskAnalytics {
+  totalTasksCount: number;
+  completedTasksCount: number;
+  activeTasksCount: number;
+  todoTasksCount: number;
+  completionRate: number;
+  categories: Array<{ name: string; count: number }>;
+  priorityCounts: {
+    urgent: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  overdueTasks: TaskScheduleAlert[];
+  dueSoonTasks: TaskScheduleAlert[];
+  projectMetrics: TaskProjectMetric[];
+}
+
 export interface Subtask {
   id: string;
   task_id: string;

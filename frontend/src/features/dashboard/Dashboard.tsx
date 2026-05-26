@@ -1,6 +1,6 @@
 import React, { Suspense, useState, useEffect, useTransition, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import type { Project, Task, ParsedTask } from '../../types';
+import type { PaginatedTasks, Project, Task, ParsedTask } from '../../types';
 import { supabase } from '../../services/supabaseClient';
 import { apiClient, handleApiRequest } from '../../services/apiClient';
 import { TaskBoard } from '../tasks/TaskBoard';
@@ -27,6 +27,8 @@ export function Dashboard(): React.JSX.Element {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskNextCursor, setTaskNextCursor] = useState<string | null>(null);
+  const [isTasksLoading, setIsTasksLoading] = useState(false);
 
   // Navigation states
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -77,25 +79,52 @@ export function Dashboard(): React.JSX.Element {
     fetchData();
   }, []);
 
+  const loadTasksPage = async (projectId: string, cursor: string | null, append: boolean) => {
+    setIsTasksLoading(true);
+    const params = new URLSearchParams({ projectId, limit: '25' });
+    if (cursor) {
+      params.set('cursor', cursor);
+    }
+
+    const [taskRes, taskErr] = await handleApiRequest(
+      apiClient.get(`/tasks?${params.toString()}`)
+    );
+    if (!taskErr && taskRes?.data?.success) {
+      const pageData: PaginatedTasks = taskRes.data.data;
+      setTasks((prev) => {
+        if (!append) return pageData.tasks;
+        const existingIds = new Set(prev.map((task) => task.id));
+        return [...prev, ...pageData.tasks.filter((task) => !existingIds.has(task.id))];
+      });
+      setTaskNextCursor(pageData.nextCursor);
+    } else if (taskErr) {
+      setFetchError('Failed to load tasks for this project.');
+    }
+    setIsTasksLoading(false);
+  };
+
   // 2. Fetch tasks when project selection changes
   useEffect(() => {
     if (!selectedProjectId) {
       setTasks([]);
+      setTaskNextCursor(null);
       return;
     }
 
     let ignore = false;
     const fetchTasks = async () => {
-      const [taskRes, taskErr] = await handleApiRequest(
-        apiClient.get(`/tasks?projectId=${selectedProjectId}`)
-      );
-      if (!ignore) {
-        if (!taskErr && taskRes?.data?.success) {
-          setTasks(taskRes.data.data);
-        } else if (taskErr) {
-          setFetchError('Failed to load tasks for this project.');
-        }
+      setIsTasksLoading(true);
+      const params = new URLSearchParams({ projectId: selectedProjectId, limit: '25' });
+      const [taskRes, taskErr] = await handleApiRequest(apiClient.get(`/tasks?${params.toString()}`));
+      if (ignore) return;
+      if (!taskErr && taskRes?.data?.success) {
+        const pageData: PaginatedTasks = taskRes.data.data;
+        setTasks(pageData.tasks);
+        setTaskNextCursor(pageData.nextCursor);
+      } else if (taskErr) {
+        setFetchError('Failed to load tasks for this project.');
       }
+      setIsTasksLoading(false);
     };
 
     fetchTasks();
@@ -602,7 +631,20 @@ export function Dashboard(): React.JSX.Element {
                   </div>
 
                   {/* Task Board Component */}
-                  <TaskBoard tasks={tasks} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} onMutateStart={handleMutateStart} onMutateEnd={handleMutateEnd} />
+                  <TaskBoard
+                    tasks={tasks}
+                    hasMoreTasks={Boolean(taskNextCursor)}
+                    isLoadingMore={isTasksLoading}
+                    onLoadMore={() => {
+                      if (selectedProjectId && taskNextCursor) {
+                        void loadTasksPage(selectedProjectId, taskNextCursor, true);
+                      }
+                    }}
+                    onDelete={handleDeleteTask}
+                    onUpdate={handleUpdateTask}
+                    onMutateStart={handleMutateStart}
+                    onMutateEnd={handleMutateEnd}
+                  />
                 </div>
               ) : (
                 <div className="glass-panel text-center py-20 rounded-2xl border border-white/5 flex flex-col justify-center items-center">

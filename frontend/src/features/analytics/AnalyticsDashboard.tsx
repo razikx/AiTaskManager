@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Project, Task } from '../../types';
+import type { Project, TaskAnalytics } from '../../types';
 import { apiClient, handleApiRequest } from '../../services/apiClient';
 import {
   TrendingUp,
@@ -18,87 +18,58 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ projects }: AnalyticsDashboardProps): React.JSX.Element {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [analytics, setAnalytics] = useState<TaskAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [filterProjectId, setFilterProjectId] = useState<string>('all');
 
-  // Fetch all tasks for all projects
+  // Fetch backend-aggregated metrics instead of loading every task row.
   useEffect(() => {
-    const fetchAllTasks = async () => {
+    const fetchAnalytics = async () => {
       setLoading(true);
-      const [res, err] = await handleApiRequest(apiClient.get('/tasks'));
+      setFetchError(null);
+      const params = new URLSearchParams();
+      if (filterProjectId !== 'all') {
+        params.set('projectId', filterProjectId);
+      }
+      const query = params.toString();
+      const [res, err] = await handleApiRequest(apiClient.get(`/tasks/analytics${query ? `?${query}` : ''}`));
       if (!err && res?.data?.success) {
-        setTasks(res.data.data);
+        setAnalytics(res.data.data);
       } else if (err) {
         setFetchError('Failed to load analytics data. Please refresh.');
       }
       setLoading(false);
     };
 
-    fetchAllTasks();
-  }, []);
-
-  // Filter tasks based on selected project
-  const filteredTasks = tasks.filter((t) => {
-    if (filterProjectId === 'all') return true;
-    return t.project_id === filterProjectId;
-  });
+    fetchAnalytics();
+  }, [filterProjectId]);
 
   // Calculate metrics
-  const totalTasksCount = filteredTasks.length;
-  const completedTasksCount = filteredTasks.filter((t) => t.status === 'completed').length;
-  const activeTasksCount = filteredTasks.filter((t) => t.status === 'in_progress').length;
-  const todoTasksCount = filteredTasks.filter((t) => t.status === 'todo').length;
-  const completionRate = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
-
-  const getCategoryFromTask = (task: Task): string => task.category ?? 'Personal';
-
-  const categoriesMap: { [key: string]: number } = {};
-  filteredTasks.forEach((task) => {
-    const cat = getCategoryFromTask(task);
-    categoriesMap[cat] = (categoriesMap[cat] || 0) + 1;
-  });
-
-  // Sort categories by count
-  const sortedCategories = Object.entries(categoriesMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
-
-  // Group tasks by priority
+  const totalTasksCount = analytics?.totalTasksCount ?? 0;
+  const completedTasksCount = analytics?.completedTasksCount ?? 0;
+  const activeTasksCount = analytics?.activeTasksCount ?? 0;
+  const todoTasksCount = analytics?.todoTasksCount ?? 0;
+  const completionRate = analytics?.completionRate ?? 0;
+  const sortedCategories = analytics?.categories ?? [];
   const priorityCount = {
-    Urgent: filteredTasks.filter((t) => t.priority_score === 3).length,
-    High: filteredTasks.filter((t) => t.priority_score === 2).length,
-    Medium: filteredTasks.filter((t) => t.priority_score === 1).length,
-    Low: filteredTasks.filter((t) => t.priority_score === 0).length
+    Urgent: analytics?.priorityCounts.urgent ?? 0,
+    High: analytics?.priorityCounts.high ?? 0,
+    Medium: analytics?.priorityCounts.medium ?? 0,
+    Low: analytics?.priorityCounts.low ?? 0
   };
-
-  // Calculate overdue & upcoming tasks
-  const now = new Date();
-  const overdueTasks = filteredTasks.filter((t) => {
-    if (t.status === 'completed' || !t.due_date) return false;
-    return new Date(t.due_date) < now;
-  });
-
-  const dueSoonTasks = filteredTasks.filter((t) => {
-    if (t.status === 'completed' || !t.due_date) return false;
-    const dueDate = new Date(t.due_date);
-    const diffTime = dueDate.getTime() - now.getTime();
-    const diffHours = diffTime / (1000 * 60 * 60);
-    return diffHours >= 0 && diffHours <= 48;
-  });
+  const overdueTasks = analytics?.overdueTasks ?? [];
+  const dueSoonTasks = analytics?.dueSoonTasks ?? [];
 
   // Calculate project-by-project progress
   const projectMetrics = projects.map((proj) => {
-    const projTasks = tasks.filter((t) => t.project_id === proj.id);
-    const projCompleted = projTasks.filter((t) => t.status === 'completed').length;
-    const rate = projTasks.length > 0 ? Math.round((projCompleted / projTasks.length) * 100) : 0;
+    const metric = analytics?.projectMetrics.find((projectMetric) => projectMetric.id === proj.id);
     return {
       id: proj.id,
       name: proj.name,
-      total: projTasks.length,
-      completed: projCompleted,
-      rate
+      total: metric?.total ?? 0,
+      completed: metric?.completed ?? 0,
+      rate: metric?.rate ?? 0
     };
   }).sort((a, b) => b.rate - a.rate);
 

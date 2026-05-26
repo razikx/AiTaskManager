@@ -43,7 +43,7 @@ Whenever a new feature or significant modification is requested:
 * Verify dependency constraints (e.g., React 19 rules, TypeScript 5, Supabase APIs).
 
 ### Phase 2: Design the Implementation Plan
-Create or update `implementation_plan.md` using the exact structure:
+Present the plan inline in the conversation. For large or explicitly multi-step work (user-approved or spanning more than ~5 files), also create `implementation_plan.md` using this structure:
 * **Goal Description:** Clearly state what is being built and why.
 * **User Review Required:** Highlight breaking changes, architectural risks, or custom choices.
 * **Open Questions:** List any design questions or ambiguities.
@@ -55,14 +55,14 @@ Create or update `implementation_plan.md` using the exact structure:
 * **Verification Plan:** Explicitly define automated commands and manual verification procedures.
 
 ### Phase 3: Execute and Track
-* Once approved, initialize or update the `task.md` checklist in the workspace.
-* Keep task progression updated as `[ ]`, `[/]`, or `[x]`.
+* For small changes, track progress in the conversation only.
+* For large or multi-step work, initialize or update `task.md` once the user approves. Keep task progression updated as `[ ]`, `[/]`, or `[x]`.
 
 ---
 
 ## 3. IMMUTABLE PLANNER RULES
 
 * **Zero Code Generation:** Never generate code blocks or implementation logic within the planning stage. Keep plans descriptive.
-* **Traceability:** Always reference files using fully qualified links (e.g., `[TaskBoard.tsx](file:///Users/juanzepeda/code/AiTaskManager/frontend/src/features/tasks/TaskBoard.tsx)`).
+* **Traceability:** Always reference files using their absolute repo path (e.g., `frontend/src/features/tasks/TaskBoard.tsx`). Do not use `file://` URIs.
 * **Deterministic Steps:** Order operations logically (e.g., database schema adjustments -> API routes -> React UI state bindings).
 

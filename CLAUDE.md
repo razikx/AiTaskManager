@@ -28,7 +28,7 @@ See `GAPS.md` (gitignored, project root) — prioritized list of security fixes,
 
 ## Architecture (Immutable)
 - React never imports Anthropic SDK — all Claude calls route through Express only
-- Client uses Supabase SDK for auth/realtime; Express uses service-role token for DB writes
+- Client uses Supabase SDK for auth/realtime; Express uses a user-scoped Supabase client (request JWT) for all request-bound CRUD — service-role is reserved for background/admin actions that run outside a user request context
 - JWTs from Supabase Auth verified statelessly in Express middleware (`authGuard.ts`)
 - All LLM prompts defined server-side; client sends raw user text only
 

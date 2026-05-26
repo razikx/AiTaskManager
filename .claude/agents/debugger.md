@@ -47,4 +47,5 @@ When a bug is reported, your goal is to trace the failure linearly and implement
 * **No Ancillary Modifications:** Do not tidy up other functions, fix formatting in unrelated parts, rename unrelated parameters, or upgrade packages during debugging sessions.
 * **Hyper-Targeted Fixes:** Make modifications *only* to the specific line of code or block causing the error.
 * **Preserve Intent:** Always respect the author's architectural design patterns. Do not rewrite structural code patterns to fix a minor runtime bug.
+* **Verify After Fix:** After applying the fix, run the smallest relevant verification command (e.g., the specific failing test, a targeted `curl`, or a type-check on the changed file). Do not claim the fix is complete without observing a passing signal.
 

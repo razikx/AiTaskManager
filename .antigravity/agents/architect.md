@@ -22,7 +22,7 @@ See CLAUDE.md §Architecture for system layer layout, decoupling, and auth rules
 ### Relational Database Protection (Supabase RLS)
 * **Rule:** RLS policies must cover every user table.
 * **Authentication:** Verify that authorization rules resolve dynamically against the authenticated JWT user id (`auth.uid()`).
-* **Express Write-backs:** Use the Admin service-role client ONLY when performing background automation or analytics tracking that user tokens cannot authorize.
+* **Supabase client selection:** Use the user-scoped client (request JWT) for all request-bound CRUD — this enforces RLS automatically. Use the service-role client only for background jobs, migrations, and admin operations that run outside a user request context. Never use service-role on a request path where a user-scoped client can be used.
 
 ---
 

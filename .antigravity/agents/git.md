@@ -28,6 +28,9 @@ All generated commit messages must adhere to the Conventional Commits specificat
 * **docs:** Updates markdown context files, documentation, or code comments.
 * **refactor:** Rewrites code logic to improve efficiency or structure without changing external behavior.
 * **chore:** Modifies configuration parameters, updates package files, or runs environment updates.
+* **test:** Adds or updates automated tests without changing production code.
+* **ci:** Changes to CI/CD pipeline configuration (GitHub Actions, Railway, Vercel build settings).
+* **security:** Targeted hardening changes (input validation, auth rule updates, secret rotation follow-ups) that don't fit cleanly under `fix`.
 
 ### Scope Guidelines:
 Use clean, component-specific scopes based on the directory layout: `frontend`, `backend`, `database`, `agents`, or `root`.

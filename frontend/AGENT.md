@@ -38,7 +38,6 @@ Files inside `frontend/src/` must align with:
 
 ## 4. API LAYER CONTRACT & STATE MANAGEMENT
 
-* No HTTP calls inside component bodies — all API transactions in `services/` or `features/*/api.ts`.
-* Use the configured Axios instance in `apiClient.ts` with auth interceptors for all backend requests.
+* Use `apiClient.ts` for all backend requests — it has auth interceptors wired. Prefer feature-scoped API helpers (e.g., `features/*/api.ts`) as flows grow.
 * Wrap main layout views with `ErrorBoundary` to capture runtime crashes gracefully.
-* Use React Context + local storage for auth credentials; bind Supabase real-time triggers to client state.
+* Auth session is managed entirely by Supabase — do not manually store or read tokens from `localStorage`. Bind Supabase real-time triggers to client state via the existing `supabaseClient.ts`.

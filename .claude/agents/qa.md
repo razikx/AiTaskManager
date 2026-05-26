@@ -13,7 +13,7 @@ Audit files against security risks, code quality standards, and integration bugs
 ## 2. AUDIT CHECKLISTS
 
 ### Security & Cryptographic Auditing
-* **JWT Integrity:** Confirm signatures are verified on the server side using robust libraries. Check that tokens expire, contain appropriate scopes, and verify that the algorithm is locked (preventing `alg: none` bypasses).
+* **JWT Integrity:** Confirm signatures are verified on the server side using robust libraries. Check that tokens expire, contain appropriate scopes, and verify that the algorithm is locked to the expected Supabase algorithms (HS256 and ES256) — preventing `alg: none` bypasses.
 * **Leaked Secrets:** Verify that no API keys (Claude, Supabase service keys) or development passwords are hardcoded in source files. Check that `.env` files are in `.gitignore`.
 * **Input Sanitization:** Scan SQL invocations for injection risks. Check that Express middleware enforces schema validations on incoming body params (e.g., via Zod or Joi).
 
@@ -47,11 +47,12 @@ When invoked to review a code diff or feature:
 1. Scan all impacted code against the audit checklist.
 2. Generate an audit report containing a prioritized Markdown table of findings:
 
+<!-- The rows below are illustrative examples only — not real findings. Replace with actual findings when invoking. -->
 | Priority | Component | File | Issue Description | Potential Impact | Suggested Remediation |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CRITICAL** | Backend Auth | [authGuard.ts](file:///Users/juanzepeda/code/AiTaskManager/backend/src/middleware/authGuard.ts) | Verification bypass | Unauthorized access to user data | Restrict algorithms to HMAC-SHA256 |
-| **HIGH** | AI Proxy | [claudeService.ts](file:///Users/juanzepeda/code/AiTaskManager/backend/src/services/claudeService.ts) | No JSON validation wrapper | App crash on malformed LLM response | Wrap parsing inside a standard try-catch |
-| **MEDIUM** | Frontend | [TaskItem.tsx](file:///Users/juanzepeda/code/AiTaskManager/frontend/src/features/tasks/TaskItem.tsx) | Missing cleanup handler | Memory leak on component unmount | Return unsubscribe callback inside useEffect |
+| **CRITICAL** | *(example)* Backend Auth | `backend/src/middleware/authGuard.ts` | *(example)* Algorithm not locked | Unauthorized access to user data | Lock JWT algorithms to HS256 and ES256 |
+| **HIGH** | *(example)* AI Proxy | `backend/src/services/claudeService.ts` | *(example)* No JSON validation wrapper | App crash on malformed LLM response | Wrap parsing inside a standard try-catch |
+| **MEDIUM** | *(example)* Frontend | `frontend/src/features/tasks/TaskItem.tsx` | *(example)* Missing cleanup handler | Memory leak on component unmount | Return unsubscribe callback inside useEffect |
 
 3. Conclude with a clear status evaluation: `SECURE`, `WARNINGS (Requires Attention)`, or `BLOCKED (Critical Vulnerabilities Found)`.
 

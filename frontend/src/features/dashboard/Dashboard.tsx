@@ -14,7 +14,9 @@ import {
   Menu,
   X,
   ClipboardList,
-  TrendingUp
+  TrendingUp,
+  Pencil,
+  Check
 } from 'lucide-react';
 
 export function Dashboard(): React.JSX.Element {
@@ -30,6 +32,10 @@ export function Dashboard(): React.JSX.Element {
   // Creation forms
   const [newProjectName, setNewProjectName] = useState('');
   const [nlpText, setNlpText] = useState('');
+
+  // Project rename
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
 
   // Async task/AI states
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -171,7 +177,22 @@ export function Dashboard(): React.JSX.Element {
     }
   };
 
-  // 5. Delete project
+  // 5. Rename project
+  const handleRenameProject = async (projectId: string) => {
+    const name = editingProjectName.trim();
+    if (!name) return;
+
+    const previousProjects = [...projects];
+    setProjects((prev) => prev.map((p) => p.id === projectId ? { ...p, name } : p));
+    setEditingProjectId(null);
+
+    const [res, err] = await handleApiRequest(apiClient.patch(`/projects/${projectId}`, { name }));
+    if (err || !res?.data?.success) {
+      setProjects(previousProjects);
+    }
+  };
+
+  // 6. Delete project
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('Are you sure you want to delete this project? All associated tasks will be removed.')) {
       return;
@@ -336,22 +357,58 @@ export function Dashboard(): React.JSX.Element {
                       : 'text-slate-400 hover:bg-slate-900/60 hover:text-white'
                   }`}
                 >
-                  <button
-                    onClick={() => {
-                      setSelectedProjectId(proj.id);
-                      setIsSidebarOpen(false); // Close sidebar on mobile
-                    }}
-                    className="flex-1 text-left truncate mr-2"
-                  >
-                    {proj.name}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteProject(proj.id)}
-                    className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
-                    title="Delete project"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  {editingProjectId === proj.id ? (
+                    <>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editingProjectName}
+                        onChange={(e) => setEditingProjectName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Escape') setEditingProjectId(null); }}
+                        className="flex-1 min-w-0 bg-slate-800 text-white text-sm rounded px-2 py-0.5 border border-brand-primary/50 outline-none mr-1"
+                      />
+                      <button
+                        onClick={() => handleRenameProject(proj.id)}
+                        className="text-green-400 hover:text-green-300 p-0.5 shrink-0"
+                        title="Save"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setEditingProjectId(null)}
+                        className="text-slate-500 hover:text-slate-300 p-0.5 shrink-0"
+                        title="Cancel"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelectedProjectId(proj.id);
+                          setIsSidebarOpen(false);
+                        }}
+                        className="flex-1 text-left truncate mr-1"
+                      >
+                        {proj.name}
+                      </button>
+                      <button
+                        onClick={() => { setEditingProjectId(proj.id); setEditingProjectName(proj.name); }}
+                        className="text-slate-500 hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
+                        title="Edit project name"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(proj.id)}
+                        className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
+                        title="Delete project"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
 

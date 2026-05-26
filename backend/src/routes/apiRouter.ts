@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProjects, createProject, deleteProject } from '../controllers/projectController.js';
+import { getProjects, createProject, renameProject, deleteProject } from '../controllers/projectController.js';
 import { getTasks, createTask, updateTask, deleteTask } from '../controllers/taskController.js';
 import { getSubtasksForTask, createSubtask, updateSubtask, deleteSubtask, bulkCreateSubtasks } from '../controllers/subtaskController.js';
 import { parseTask, generateSubtasks } from '../controllers/aiController.js';
@@ -13,6 +13,7 @@ const apiRouter = Router();
 const projectRouter = Router();
 projectRouter.get('/', getProjects);
 projectRouter.post('/', createProject);
+projectRouter.patch('/:id', renameProject);
 projectRouter.delete('/:id', deleteProject);
 
 //---------------------------------------------------------

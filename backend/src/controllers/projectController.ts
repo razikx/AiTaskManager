@@ -80,6 +80,54 @@ export async function createProject(
 }
 
 /**
+ * Rename a project by ID.
+ */
+export async function renameProject(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Project ID parameter is required.' }
+      });
+    }
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Project name is required and must be a non-empty string.' }
+      });
+    }
+
+    const supabase = getUserSupabaseClient(req.headers.authorization);
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update({ name: name.trim() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'DATABASE_ERROR', message: error.message }
+      });
+    }
+
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
  * Delete a project by ID.
  * Due to SQL constraints, tasks and subtasks will automatically cascade delete.
  */

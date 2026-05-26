@@ -38,9 +38,10 @@ export function Dashboard(): React.JSX.Element {
   const [newProjectName, setNewProjectName] = useState('');
   const [nlpText, setNlpText] = useState('');
 
-  // Project rename
+  // Project rename / delete confirm
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
+  const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<string | null>(null);
 
   // Async task/AI states
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -89,6 +90,8 @@ export function Dashboard(): React.JSX.Element {
     const [taskRes, taskErr] = await handleApiRequest(
       apiClient.get(`/tasks?${params.toString()}`)
     );
+    // Discard if the user switched projects while this fetch was in-flight
+    if (projectId !== selectedProjectIdRef.current) return;
     if (!taskErr && taskRes?.data?.success) {
       const pageData: PaginatedTasks = taskRes.data.data;
       setTasks((prev) => {
@@ -252,10 +255,7 @@ export function Dashboard(): React.JSX.Element {
 
   // 6. Delete project
   const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project? All associated tasks will be removed.')) {
-      return;
-    }
-
+    setConfirmDeleteProjectId(null);
     const previousProjects = [...projects];
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
 
@@ -471,6 +471,22 @@ export function Dashboard(): React.JSX.Element {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </>
+                  ) : confirmDeleteProjectId === proj.id ? (
+                    <div className="flex items-center gap-1 w-full">
+                      <span className="text-2xs text-slate-400 flex-1 truncate">Delete project?</span>
+                      <button
+                        onClick={() => handleDeleteProject(proj.id)}
+                        className="text-2xs px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded font-semibold transition-colors shrink-0"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteProjectId(null)}
+                        className="text-2xs px-1.5 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded font-semibold transition-colors shrink-0"
+                      >
+                        No
+                      </button>
+                    </div>
                   ) : (
                     <>
                       <button
@@ -484,14 +500,14 @@ export function Dashboard(): React.JSX.Element {
                       </button>
                       <button
                         onClick={() => { setEditingProjectId(proj.id); setEditingProjectName(proj.name); }}
-                        className="text-slate-500 hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
+                        className="text-slate-500 hover:text-slate-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
                         title="Edit project name"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteProject(proj.id)}
-                        className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
+                        onClick={() => setConfirmDeleteProjectId(proj.id)}
+                        className="text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-0.5 shrink-0"
                         title="Delete project"
                       >
                         <X className="w-4 h-4" />

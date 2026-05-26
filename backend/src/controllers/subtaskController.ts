@@ -1,6 +1,35 @@
 import { Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { AuthenticatedRequest } from '../middleware/authGuard.js';
 import { getUserSupabaseClient } from '../config/supabaseClientHelper.js';
+import { sendValidationError } from '../utils/validation.js';
+
+const taskIdParamsSchema = z.object({
+  taskId: z.string().uuid('Task ID must be a valid UUID.')
+});
+
+const subtaskIdParamsSchema = z.object({
+  id: z.string().uuid('Subtask ID must be a valid UUID.')
+});
+
+const createSubtaskBodySchema = z.object({
+  title: z.string().trim().min(1, 'Subtask title is required.').max(200, 'Subtask title must not exceed 200 characters.')
+}).strict();
+
+const updateSubtaskBodySchema = z.object({
+  title: z.string().trim().min(1, 'Subtask title cannot be empty.').max(200, 'Subtask title must not exceed 200 characters.').optional(),
+  is_completed: z.boolean().optional()
+})
+  .strict()
+  .refine((body) => Object.keys(body).length > 0, {
+    message: 'No valid fields provided for update.'
+  });
+
+const bulkCreateSubtasksBodySchema = z.object({
+  titles: z.array(
+    z.string().trim().min(1, 'Subtask title cannot be empty.').max(200, 'Subtask title must not exceed 200 characters.')
+  ).min(1, 'Parameter "titles" must contain at least one subtask.').max(20, 'Cannot create more than 20 subtasks at once.')
+}).strict();
 
 /**
  * Fetch all subtasks belonging to a specific parent task.
@@ -11,14 +40,12 @@ export async function getSubtasksForTask(
   next: NextFunction
 ) {
   try {
-    const { taskId } = req.params;
-    if (!taskId) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'Task ID parameter is required.' }
-      });
+    const paramsResult = taskIdParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return sendValidationError(res, paramsResult.error);
     }
 
+    const { taskId } = paramsResult.data;
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
     const { data, error } = await supabase
@@ -52,23 +79,18 @@ export async function createSubtask(
   next: NextFunction
 ) {
   try {
-    const { taskId } = req.params;
-    const { title } = req.body;
-
-    if (!taskId) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'Task ID parameter is required.' }
-      });
+    const paramsResult = taskIdParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return sendValidationError(res, paramsResult.error);
     }
 
-    if (!title || typeof title !== 'string') {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'Subtask title is required and must be a string.' }
-      });
+    const bodyResult = createSubtaskBodySchema.safeParse(req.body);
+    if (!bodyResult.success) {
+      return sendValidationError(res, bodyResult.error);
     }
 
+    const { taskId } = paramsResult.data;
+    const { title } = bodyResult.data;
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
     // Write to DB. Supabase RLS checks that task_id belongs to the requesting auth.uid()
@@ -107,19 +129,21 @@ export async function updateSubtask(
   next: NextFunction
 ) {
   try {
-    const { id } = req.params;
-    // Use an explicit allowlist of mutable fields to prevent mass-assignment attacks
-    const { title, is_completed } = req.body;
+    const paramsResult = subtaskIdParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return sendValidationError(res, paramsResult.error);
+    }
+
+    const bodyResult = updateSubtaskBodySchema.safeParse(req.body);
+    if (!bodyResult.success) {
+      return sendValidationError(res, bodyResult.error);
+    }
+
+    const { id } = paramsResult.data;
+    const { title, is_completed } = bodyResult.data;
     const allowedUpdates: Record<string, unknown> = {};
     if (title !== undefined) allowedUpdates.title = title;
     if (is_completed !== undefined) allowedUpdates.is_completed = is_completed;
-
-    if (Object.keys(allowedUpdates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'No valid fields provided for update.' }
-      });
-    }
 
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
@@ -155,14 +179,12 @@ export async function deleteSubtask(
   next: NextFunction
 ) {
   try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'Subtask ID parameter is required.' }
-      });
+    const paramsResult = subtaskIdParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return sendValidationError(res, paramsResult.error);
     }
 
+    const { id } = paramsResult.data;
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
     const { error } = await supabase
@@ -197,23 +219,18 @@ export async function bulkCreateSubtasks(
   next: NextFunction
 ) {
   try {
-    const { taskId } = req.params;
-    const { titles } = req.body;
-
-    if (!taskId) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'Task ID parameter is required.' }
-      });
+    const paramsResult = taskIdParamsSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+      return sendValidationError(res, paramsResult.error);
     }
 
-    if (!titles || !Array.isArray(titles) || titles.length === 0 || !titles.every(t => typeof t === 'string')) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_INPUT', message: 'Parameter "titles" must be a non-empty array of strings.' }
-      });
+    const bodyResult = bulkCreateSubtasksBodySchema.safeParse(req.body);
+    if (!bodyResult.success) {
+      return sendValidationError(res, bodyResult.error);
     }
 
+    const { taskId } = paramsResult.data;
+    const { titles } = bodyResult.data;
     const supabase = getUserSupabaseClient(req.headers.authorization);
 
     const subtaskPayloads = titles.map(title => ({

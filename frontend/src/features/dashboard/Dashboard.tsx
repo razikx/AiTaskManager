@@ -55,6 +55,9 @@ export function Dashboard(): React.JSX.Element {
     selectedProjectIdRef.current = selectedProjectId;
   }, [selectedProjectId]);
 
+  // Track task IDs with in-flight PATCH mutations to prevent realtime echoes from overwriting them
+  const pendingTaskMutations = useRef<Set<string>>(new Set());
+
   // 1. Fetch initial data
   const fetchData = async () => {
     setFetchError(null);
@@ -156,9 +159,18 @@ export function Dashboard(): React.JSX.Element {
           } else if (payload.eventType === 'UPDATE') {
             const updatedTask = payload.new as Task;
             if (updatedTask.project_id === selectedProjectIdRef.current) {
-              setTasks((prev) =>
-                prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
-              );
+              // Skip if a local mutation is in-flight for this task — the PATCH response
+              // will confirm state directly, preventing the echo from reverting a second
+              // optimistic update that arrived before the first server event.
+              if (!pendingTaskMutations.current.has(updatedTask.id)) {
+                setTasks((prev) =>
+                  prev.map((t) =>
+                    t.id === updatedTask.id
+                      ? { ...updatedTask, subtasks: t.subtasks }
+                      : t
+                  )
+                );
+              }
             } else {
               // If it moved projects, remove it from current list
               setTasks((prev) => prev.filter((t) => t.id !== updatedTask.id));
@@ -238,10 +250,24 @@ export function Dashboard(): React.JSX.Element {
   };
 
   // 7. Update task properties (e.g. status) optimistically
+  // Preserves subtasks: callers (TaskItem PATCH responses) don't include joined subtask data,
+  // so fall back to the existing entry's subtasks rather than wiping them.
   const handleUpdateTask = (updatedTask: Task) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+      prev.map((t) =>
+        t.id === updatedTask.id
+          ? { ...updatedTask, subtasks: updatedTask.subtasks ?? t.subtasks }
+          : t
+      )
     );
+  };
+
+  const handleMutateStart = (id: string) => {
+    pendingTaskMutations.current.add(id);
+  };
+
+  const handleMutateEnd = (id: string) => {
+    pendingTaskMutations.current.delete(id);
   };
 
   // 8. Smart AI Input Handler (queries Claude proxy API)
@@ -576,7 +602,7 @@ export function Dashboard(): React.JSX.Element {
                   </div>
 
                   {/* Task Board Component */}
-                  <TaskBoard tasks={tasks} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+                  <TaskBoard tasks={tasks} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} onMutateStart={handleMutateStart} onMutateEnd={handleMutateEnd} />
                 </div>
               ) : (
                 <div className="glass-panel text-center py-20 rounded-2xl border border-white/5 flex flex-col justify-center items-center">

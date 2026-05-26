@@ -7,9 +7,11 @@ interface TaskBoardProps {
   tasks: Task[];
   onDelete: (id: string) => void;
   onUpdate: (task: Task) => void;
+  onMutateStart: (id: string) => void;
+  onMutateEnd: (id: string) => void;
 }
 
-export function TaskBoard({ tasks, onDelete, onUpdate }: TaskBoardProps): React.JSX.Element {
+export function TaskBoard({ tasks, onDelete, onUpdate, onMutateStart, onMutateEnd }: TaskBoardProps): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [sortByPriority, setSortByPriority] = useState(true);
 
@@ -91,7 +93,7 @@ export function TaskBoard({ tasks, onDelete, onUpdate }: TaskBoardProps): React.
             </div>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               {getSortedTasks(todoTasks).map((task) => (
-                <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
+                <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} onMutateStart={onMutateStart} onMutateEnd={onMutateEnd} />
               ))}
               {todoTasks.length === 0 && (
                 <div className="text-center py-8 border border-dashed border-white/5 rounded-xl text-xs text-slate-600">
@@ -114,7 +116,7 @@ export function TaskBoard({ tasks, onDelete, onUpdate }: TaskBoardProps): React.
             </div>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               {getSortedTasks(activeTasks).map((task) => (
-                <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
+                <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} onMutateStart={onMutateStart} onMutateEnd={onMutateEnd} />
               ))}
               {activeTasks.length === 0 && (
                 <div className="text-center py-8 border border-dashed border-white/5 rounded-xl text-xs text-slate-600">
@@ -137,7 +139,7 @@ export function TaskBoard({ tasks, onDelete, onUpdate }: TaskBoardProps): React.
             </div>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               {getSortedTasks(completedTasks).map((task) => (
-                <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
+                <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} onMutateStart={onMutateStart} onMutateEnd={onMutateEnd} />
               ))}
               {completedTasks.length === 0 && (
                 <div className="text-center py-8 border border-dashed border-white/5 rounded-xl text-xs text-slate-600">
@@ -151,7 +153,7 @@ export function TaskBoard({ tasks, onDelete, onUpdate }: TaskBoardProps): React.
         /* Flat List View sorted by status/priority */
         <div className="space-y-3 max-w-4xl mx-auto">
           {getSortedTasks(tasks).map((task) => (
-            <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
+            <TaskItem key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} onMutateStart={onMutateStart} onMutateEnd={onMutateEnd} />
           ))}
         </div>
       )}

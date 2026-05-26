@@ -8,6 +8,8 @@ interface TaskItemProps {
   task: Task;
   onDelete: (id: string) => void;
   onUpdate: (task: Task) => void;
+  onMutateStart: (id: string) => void;
+  onMutateEnd: (id: string) => void;
 }
 
 function toDatetimeLocal(iso: string | null): string {
@@ -17,13 +19,21 @@ function toDatetimeLocal(iso: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX.Element {
+export function TaskItem({ task, onDelete, onUpdate, onMutateStart, onMutateEnd }: TaskItemProps): React.JSX.Element {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
+  const [editPriorityScore, setEditPriorityScore] = useState(task.priority_score);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const priorityOptions = [
+    { score: 3, label: 'Urgent' },
+    { score: 2, label: 'High' },
+    { score: 1, label: 'Medium' },
+    { score: 0, label: 'Low' }
+  ];
 
   // Map priority_score to badge styling and labels
   const getPriorityBadge = (score: number) => {
@@ -58,17 +68,18 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
   // Toggle status transition
   const handleStatusChange = (newStatus: TaskStatus) => {
     startTransition(async () => {
-      // Create copy of task to update
-      const updatedTask = { ...task, status: newStatus };
-      onUpdate(updatedTask); // Optimistic UI trigger
+      onUpdate({ ...task, status: newStatus });
+      onMutateStart(task.id);
 
       const [res, err] = await handleApiRequest(
         apiClient.patch(`/tasks/${task.id}`, { status: newStatus })
       );
+      onMutateEnd(task.id);
 
       if (err || !res?.data?.success) {
-        // Rollback on error
         onUpdate(task);
+      } else {
+        onUpdate(res.data.data as Task);
       }
     });
   };
@@ -82,6 +93,7 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
   const openEdit = () => {
     setEditTitle(task.title);
     setEditDueDate(toDatetimeLocal(task.due_date));
+    setEditPriorityScore(task.priority_score);
     setIsEditing(true);
   };
 
@@ -91,20 +103,26 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
         ...task,
         title: editTitle.trim() || task.title,
         due_date: editDueDate ? new Date(editDueDate).toISOString() : null,
+        priority_score: editPriorityScore,
       };
       onUpdate(updatedTask);
       setIsEditing(false);
+      onMutateStart(task.id);
 
       const [res, err] = await handleApiRequest(
         apiClient.patch(`/tasks/${task.id}`, {
           title: updatedTask.title,
           due_date: updatedTask.due_date,
+          priority_score: updatedTask.priority_score,
         })
       );
+      onMutateEnd(task.id);
 
       if (err || !res?.data?.success) {
-        onUpdate(task); // rollback
+        onUpdate(task);
         setIsEditing(true);
+      } else {
+        onUpdate(res.data.data as Task);
       }
     });
   };
@@ -144,6 +162,18 @@ export function TaskItem({ task, onDelete, onUpdate }: TaskItemProps): React.JSX
                 onChange={(e) => setEditDueDate(e.target.value)}
                 className="bg-slate-950/60 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-brand-primary"
               />
+              <select
+                aria-label="Priority"
+                value={editPriorityScore}
+                onChange={(e) => setEditPriorityScore(Number(e.target.value))}
+                className="bg-slate-950/60 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-brand-primary"
+              >
+                {priorityOptions.map((option) => (
+                  <option key={option.score} value={option.score}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
               <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={handleSaveEdit}

@@ -52,7 +52,7 @@ describe('TaskItem', () => {
   });
 
   it('shows subtask completion ratio on the task card', () => {
-    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={vi.fn()} />);
+    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={vi.fn()} onMutateStart={vi.fn()} onMutateEnd={vi.fn()} />);
 
     expect(screen.getByText('1/2 done')).toBeInTheDocument();
   });
@@ -61,7 +61,7 @@ describe('TaskItem', () => {
     const onUpdate = vi.fn();
     vi.mocked(handleApiRequest).mockResolvedValue([null, new Error('Network error')]);
 
-    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={onUpdate} />);
+    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={onUpdate} onMutateStart={vi.fn()} onMutateEnd={vi.fn()} />);
 
     await userEvent.click(screen.getByTitle('Mark Complete'));
 
@@ -77,7 +77,7 @@ describe('TaskItem', () => {
   it('sends validated status changes through the API client', async () => {
     const onUpdate = vi.fn();
 
-    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={onUpdate} />);
+    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={onUpdate} onMutateStart={vi.fn()} onMutateEnd={vi.fn()} />);
 
     await userEvent.click(screen.getByRole('button', { name: /active/i }));
 
@@ -89,6 +89,28 @@ describe('TaskItem', () => {
     expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
       id: task.id,
       status: 'in_progress'
+    }));
+  });
+
+  it('edits priority through the inline task edit flow', async () => {
+    const onUpdate = vi.fn();
+
+    render(<TaskItem task={task} onDelete={vi.fn()} onUpdate={onUpdate} onMutateStart={vi.fn()} onMutateEnd={vi.fn()} />);
+
+    await userEvent.click(screen.getByTitle('Edit task'));
+    await userEvent.selectOptions(screen.getByLabelText('Priority'), '3');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      expect(apiClient.patch).toHaveBeenCalledWith(`/tasks/${task.id}`, {
+        title: task.title,
+        due_date: null,
+        priority_score: 3
+      });
+    });
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      id: task.id,
+      priority_score: 3
     }));
   });
 });

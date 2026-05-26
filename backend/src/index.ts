@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { authGuard, AuthenticatedRequest } from './middleware/authGuard.js';
 import apiRouter from './routes/apiRouter.js';
+import logger from './utils/logger.js';
 
 dotenv.config();
 
@@ -24,9 +25,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Log basic requests for debugging
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[HTTP] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  logger.info({ method: req.method, path: req.path }, 'request');
   next();
 });
 
@@ -75,7 +75,7 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   const errorCode = appErr?.code ?? 'INTERNAL_SERVER_ERROR';
   const message = appErr?.message ?? 'An unexpected error occurred.';
 
-  console.error(`[Error Handler] ${errorCode}: ${message}`, err);
+  logger.error({ code: errorCode, err }, message);
 
   res.status(statusCode).json({
     success: false,
@@ -89,7 +89,7 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
 
 // 5. SERVER RUNTIME BOOTSTRAP
 app.listen(PORT, () => {
-  console.log(`[Server] AiTaskManager Backend running on http://localhost:${PORT}`);
+  logger.info({ port: PORT }, 'AiTaskManager backend running');
 });
 
 export default app;

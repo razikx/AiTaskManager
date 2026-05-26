@@ -1,8 +1,10 @@
 # AiTaskManager
 
+[![Deploy Frontend](https://github.com/razikx/AiTaskManager/actions/workflows/deploy-frontend.yml/badge.svg)](https://github.com/razikx/AiTaskManager/actions/workflows/deploy-frontend.yml)
+
 AI-powered task manager with natural language input. Write tasks in plain English — the app parses priority, due date, and category automatically using Claude Haiku.
 
-**Live demo:** https://razikx.com
+**Live demo:** https://www.razikx.com
 
 ![AiTaskManager dashboard](docs/screenshot.png)
 
@@ -46,7 +48,10 @@ Express Backend (Railway)
 Supabase (PostgreSQL + RLS)
 ```
 
-**Key constraint:** the Anthropic SDK is never imported client-side. All Claude calls go through the Express proxy.
+**Key constraints:**
+- The Anthropic SDK is never imported client-side — all Claude calls go through the Express proxy
+- AI endpoints are rate-limited to 10 requests/minute per IP (`express-rate-limit`)
+- All server output uses structured JSON logging via `pino` (pretty-printed in development)
 
 ---
 
@@ -102,6 +107,15 @@ ANTHROPIC_API_KEY=
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_API_URL=http://localhost:4000/api
+```
+
+---
+
+## Testing
+
+```bash
+cd backend && npm test   # Vitest + supertest — controller, middleware, service tests
+cd frontend && npm test  # Vitest + jsdom + Testing Library — component tests
 ```
 
 ---

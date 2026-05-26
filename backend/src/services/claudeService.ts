@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
+import logger from '../utils/logger.js';
 
 dotenv.config();
 
@@ -76,7 +77,7 @@ export async function parseTaskText(rawText: string, timezone?: string): Promise
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
-    console.warn('[Claude Service] ANTHROPIC_API_KEY is missing. Falling back to local rule-based regex parser.');
+    logger.warn('ANTHROPIC_API_KEY missing — falling back to regex parser');
     return fallbackRegexParser(rawText);
   }
 
@@ -131,8 +132,7 @@ Do not wrap your output in markdown JSON blocks (\`\`\`json). Return raw JSON te
       priority_score: mapPriorityToScore(suggestedPriority, rawText),
     };
   } catch (err) {
-    console.error('[Claude Service] Error parsing task text via Claude API:', err);
-    console.log('[Claude Service] Falling back to regex-based rule parser.');
+    logger.error({ err }, 'Claude parse-task failed — falling back to regex parser');
     return fallbackRegexParser(rawText);
   }
 }
@@ -220,7 +220,7 @@ export async function generateSubtasksForTask(taskTitle: string, taskDescription
   const combinedText = `Task: "${taskTitle}"${descriptionText}`;
 
   if (!apiKey) {
-    console.warn('[Claude Service] ANTHROPIC_API_KEY is missing. Falling back to local checklist heuristics.');
+    logger.warn('ANTHROPIC_API_KEY missing — falling back to subtask heuristics');
     return fallbackSubtasksGenerator(taskTitle, taskDescription || '');
   }
 
@@ -255,10 +255,10 @@ Output a valid JSON array of strings only. Do not include markdown indicators li
       return parsed.slice(0, 6); // Limit to max 6 subtasks
     }
     
-    console.warn('[Claude Service] Response from AI was not an array of strings:', cleanText);
+    logger.warn({ cleanText }, 'Claude subtask response was not a string array — falling back to heuristics');
     return fallbackSubtasksGenerator(taskTitle, taskDescription || '');
   } catch (err) {
-    console.error('[Claude Service] Error generating subtasks via Claude API:', err);
+    logger.error({ err }, 'Claude generate-subtasks failed');
     return fallbackSubtasksGenerator(taskTitle, taskDescription || '');
   }
 }

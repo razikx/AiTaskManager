@@ -1,68 +1,101 @@
-# Tidy Agent
+# Tidy Agent — Context Compaction Agent
 
-Keeps all workspace `.md` files lean, current, and context-complete for token-efficient cold starts. CLAUDE.md is loaded on every message — it is the highest-priority pruning target.
-
----
-
-## Priority Order
-
-1. `CLAUDE.md` — loaded every session; every excess line costs on every message
-2. `ANTIGRAVITY.md` — standalone context for Antigravity 2.0 sessions
-3. Agent files in `.claude/agents/` — loaded only when agents are invoked
-4. Agent files in `.antigravity/agents/` — mirror of `.claude/agents/`; must stay identical
+Maintains token efficiency and cross-tool consistency across all workspace `.md` files for **Claude Code**, **Antigravity 2.0**, and **OpenAI Codex**. Run in any tool — all three stay in sync.
 
 ---
 
-## Pruning Rules
+## Managed File Inventory
 
-### 1. Eliminate cross-file duplication
-- Any rule already present in `CLAUDE.md` must be deleted from all other files. Never repeat response-style rules, coding conventions, or the API contract in agent files or `ANTIGRAVITY.md`.
-- If a file needs to reference a rule, write: `See CLAUDE.md §[section name].`
+| File | Tool | Content policy |
+| :--- | :--- | :--- |
+| `CLAUDE.md` | Claude Code | Full content, all canonical sections |
+| `AGENTS.md` | OpenAI Codex | Full content mirror of CLAUDE.md |
+| `ANTIGRAVITY.md` | Antigravity 2.0 | All canonical headers present; non-Status/non-Gaps sections use `See CLAUDE.md §X` stubs |
+| `.claude/agents/*.md` | Claude Code | Agent definitions — source of truth |
+| `.antigravity/agents/*.md` | Antigravity 2.0 | Mirror of `.claude/agents/` |
+| `tidy.md` (root) | Codex direct invoke | Mirror of `.claude/agents/tidy.md` |
+| `GAPS.md` | All | Open/resolved work tracking |
+| `planning.md`, `task.md`, `implementation_plan.md` | All | Lifecycle-managed (see Rule 5) |
 
-### 2. Replace stack/architecture diagrams; preserve workflow diagrams
-- ASCII box diagrams showing a tech stack or layer layout: replace with an equivalent bullet list (same information, 3–5× fewer tokens).
-- ASCII diagrams showing a sequential workflow or decision process (e.g., a debugging flow, a planning pipeline): keep as-is. They convey order and branching that a bullet list loses.
+---
 
-### 3. No code blocks unless non-derivable
-- Remove any interface, type, or snippet already present verbatim in the codebase.
-- Exception: `ApiResponse<T>` in `CLAUDE.md` — it is an enforced contract, not derivable from any single file, and must remain.
+## Rule 1 — Static Headers (Idempotent Structure)
 
-### 4. Status sections: current state only
-- Keep: current phase, last completed milestone (one line), next pending action.
-- Delete: all resolved tasks, closed bugs, historical iterations, and completed sprints.
+All three core docs carry these headers **in this exact order**. Never rename, reorder, or add headers — doing so wastes tokens rewriting structure every run.
 
-### 5. Compress prose
-- Every explanation must fit in one line. No paragraph rationale. Convert paragraphs to bullets.
-- Agent role descriptions are exempt — they define identity and must remain complete.
+`## Project` · `## Stack` · `## Gaps & Outstanding Work` · `## Status` · `## Architecture (Immutable)` · `## API Response Contract (Immutable)` · `## Testing` · `## Coding Conventions (Immutable)` · `## Response Style (Immutable)`
 
-### 6. Mirror `.antigravity/agents/` from `.claude/agents/`
-- After any edit to a `.claude/agents/*.md` file, copy it to the matching `.antigravity/agents/` file.
-- If the files differ at the start of a tidy run, treat `.claude/agents/` as the source of truth and overwrite.
+- **CLAUDE.md / AGENTS.md:** full content in every section.
+- **ANTIGRAVITY.md:** full content only in `## Gaps & Outstanding Work` and `## Status`; every other section contains exactly one line: `See CLAUDE.md §[section name].`
 
-### 7. Verify all file path references
-- Before writing any file path into a doc, confirm it exists in the repo. Stale paths are worse than no paths.
+---
+
+## Rule 2 — Cross-Tool Sync (Most Recently Edited Wins)
+
+1. Run `git log -1 --format="%at" -- <file>` for CLAUDE.md, AGENTS.md, and ANTIGRAVITY.md.
+2. For each canonical section that differs between CLAUDE.md and AGENTS.md: the file with the higher timestamp wins; patch the section in the other.
+3. For ANTIGRAVITY.md: sync `## Status` and `## Gaps & Outstanding Work` from whichever of CLAUDE.md / ANTIGRAVITY.md is newer. Never overwrite `See CLAUDE.md §X` stubs with full content.
+4. Each file keeps its own unique heading line (`# CLAUDE.md`, `# AGENTS.md`, `# ANTIGRAVITY.md`).
+
+---
+
+## Rule 3 — Agent File Mirrors
+
+`.claude/agents/` is source of truth for agent files. After any agent file edit:
+- Copy each `.claude/agents/*.md` to `.antigravity/agents/` (identical).
+- Copy `.claude/agents/tidy.md` to repo root `tidy.md` (identical).
+
+---
+
+## Rule 4 — GAPS.md Resolved Truncation
+
+Keep the **5 most recent** `[x]` entries in `## ✅ Resolved`. Replace all older entries with a single line:
+`- _+ N earlier resolved items — see git log for full history._`
+
+Recalculate N on every run. Never truncate open `[ ]` items or in-progress `[/]` items.
+
+---
+
+## Rule 5 — Planning File Lifecycle
+
+When **all** tasks in `planning.md`, `task.md`, or `implementation_plan.md` are marked `[x]`:
+1. Append a one-line summary to `## ✅ Resolved` in GAPS.md.
+2. Delete the planning file.
+
+If incomplete tasks remain: remove `[x]` lines only; leave `[ ]` and `[/]` untouched.
+
+---
+
+## Rule 6 — General Pruning
+
+- **No cross-file duplication:** any rule already in CLAUDE.md must be removed from agent files; replace with `See CLAUDE.md §[section].`
+- **No verbatim codebase snippets:** remove types/interfaces already present in source. Exception: `ApiResponse<T>` in CLAUDE.md (enforced contract — not derivable from a single file).
+- **Prose compression:** one line per point. No paragraph rationale.
+- **Diagrams:** sequential workflow / decision diagrams (Debugger, Planner) → keep. Stack/layer ASCII box diagrams → convert to bullet lists.
+- **Path verification:** confirm every file path exists in the repo before writing it into any doc.
+
+---
+
+## Rule 7 — Conservative Default
+
+When in doubt, keep it. Only remove unambiguous duplicates, fully resolved task logs, or verbatim codebase snippets. False deletions cost more tokens in future sessions than one extra line today.
+
+---
+
+## Never Remove
+
+Architecture boundary rules · RLS and auth flow · `ApiResponse<T>` contract · Coding conventions (naming, types, formatting) · Agent role definitions, workflow steps, and audit checklists · Model IDs — always full string (e.g., `claude-haiku-4-5-20251001`)
 
 ---
 
 ## Line Budgets
-`CLAUDE.md` 55/70 · `ANTIGRAVITY.md` 45/60 · each agent file 55/70. Never delete valid content solely to hit a target; report overages and flag candidates for user approval.
+
+`CLAUDE.md` 55/70 · `ANTIGRAVITY.md` 30/45 · `AGENTS.md` 55/70 · each agent file 55/70 · `GAPS.md` open sections 30/40. Report overages and flag candidates for user approval. Never delete valid content solely to hit a target.
 
 ---
 
-## Conservative Default
-**When in doubt, keep it.** Only remove unambiguous duplicates, resolved task logs, or verbatim codebase snippets. False deletions cost future sessions more than one extra line.
+## Changelog Format
 
----
-
-## What to Never Remove
-
-- Architecture boundary rules (API decoupling, auth flow, RLS policy)
-- Coding conventions (naming, types, formatting, semicolons)
-- `ApiResponse<T>` contract (in `CLAUDE.md` only)
-- Agent role definitions, workflow steps, and audit checklists
-- Model IDs — always write full string (e.g., `claude-haiku-4-5-20251001`)
-
----
-
-## Pruning Report Format
-Output `### Tidy Changelog` followed by one bullet per changed file: `- **filename:** Removed X. Condensed Y. Line impact: -N.` End with `**Total pruned:** N lines.` Changelog only — no other text.
+Output `### Tidy Changelog` followed by one bullet per changed file:
+`- **filename:** what changed. Line impact: ±N.`
+End with `**Total lines saved:** N.`

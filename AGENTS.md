@@ -9,7 +9,7 @@ AI-Powered Task Manager — NLP task parsing, subtask generation, smart prioriti
 - **Frontend:** React 19 + TypeScript 5, Tailwind CSS → Vercel
 - **Backend:** Node.js + Express (JWT proxy) → Railway
 - **DB/Auth:** Supabase (PostgreSQL, RLS, real-time)
-- **AI:** Codex Haiku 4.5 (`Codex-haiku-4-5-20251001`) via Express proxy — never called directly from client
+- **AI:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) via Express proxy — never called directly from client
 
 ---
 
@@ -23,11 +23,12 @@ See `GAPS.md` (gitignored, project root) — prioritized list of security fixes,
 - **Frontend (Vercel):** https://razikx.com — GHA auto-deploys on `frontend/**` push; manual: `vercel --prod` from `/frontend`
 - **Backend (Railway):** https://ai-task-manager-backend-production-e73a.up.railway.app — auto-deploys via Railway GitHub integration on push to `main`
 - **Key env note:** `VITE_API_URL` must include `/api` suffix; `CORS_ORIGIN` on Railway is comma-separated (`https://razikx.com,https://www.razikx.com,https://frontend-kappa-sand-ihllnsfmku.vercel.app`)
+- **Deploy order:** Run Supabase SQL migration first → push backend → push frontend. Never push backend code that depends on a schema change before the migration runs.
 
 ---
 
 ## Architecture (Immutable)
-- React never imports Anthropic SDK — all Codex calls route through Express only
+- React never imports Anthropic SDK — all Claude calls route through Express only
 - Client uses Supabase SDK for auth/realtime; Express uses a user-scoped Supabase client (request JWT) for all request-bound CRUD — service-role is reserved for background/admin actions that run outside a user request context
 - JWTs from Supabase Auth verified statelessly in Express middleware (`authGuard.ts`)
 - All LLM prompts defined server-side; client sends raw user text only
@@ -43,6 +44,13 @@ interface ApiResponse<T = unknown> {
   error?: { code: string; message: string; details?: unknown; };
 }
 ```
+
+---
+
+## Testing
+- **Run:** `npm test` in `/frontend` and `npm test` in `/backend` (both use Vitest)
+- **Backend:** Vitest + supertest — controller, middleware, and service tests in `src/**/*.test.ts`
+- **Frontend:** Vitest + jsdom + Testing Library — component tests in `src/**/*.test.tsx`
 
 ---
 
